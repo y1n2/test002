@@ -1,0 +1,194 @@
+我整理了设计 freeDiameter 字典所需的 基本配置信息、命令（Command）信息、AVP 定义 以及 枚举值（Enumerations）。
+1. 基础配置信息 (Base Configuration)
+在 freeDiameter 的配置文件中，你需要定义应用ID和厂商ID。
+Application Name: MAGIC (Manager of Air/Ground Interface Communications)
+Application ID: 1094202169 (十六进制: 0x41383339, ASCII string "A839")
+Vendor Name: ARINC Industry Activities
+Vendor ID: 13712 (IANA Enterprise ID)
+2. 命令对信息 (Command Pairs)
+基于文档 Section 4.1.3 (Page 36) 和 Appendix B (Page 113+)，以下是 MAGIC 协议定义的 Diameter 命令。
+Command Code	Command Name (Request/Answer)	Abbrev.	Application ID
+100000	MAGIC-Client-Authentication-Request	MCAR	1094202169
+100000	MAGIC-Client-Authentication-Answer	MCAA	1094202169
+100001	MAGIC-Communication-Change-Request	MCCR	1094202169
+100001	MAGIC-Communication-Change-Answer	MCCA	1094202169
+100002	MAGIC-Notification-Report	MNTR	1094202169
+100002	MAGIC-Notification-Answer	MNTA	1094202169
+100003	MAGIC-Status-Change-Report	MSCR	1094202169
+100003	MAGIC-Status-Change-Answer	MSCA	1094202169
+100004	MAGIC-Status-Request	MSXR	1094202169
+100004	MAGIC-Status-Answer	MSXA	1094202169
+100005	MAGIC-Accounting-Data-Request	MADR	1094202169
+100005	MAGIC-Accounting-Data-Answer	MADA	1094202169
+100006	MAGIC-Accounting-Control-Request	MACR	1094202169
+100006	MAGIC-Accounting-Control-Answer	MACA	1094202169
+3. AVP 定义 (Attribute Value Pairs)
+整理自 Attachment 1, Section 4.1.4.2 (Page 58-60) 及详细定义部分。
+注意： 所有 Code 在 10xxx 和 20xxx 范围内的 AVP，其 Vendor ID 均为 13712。
+3.1 基础数据类型 AVP (Primitive Types)
+AVP Name	AVP Code	Type	Description / Enum Values
+Client-Password	10001	UTF8String	客户端密码
+REQ-Status-Info	10002	Unsigned32	请求状态信息。<br>0=No_Status<br>1=MAGIC_Status<br>2=DLM_Status<br>3=MAGIC_DLM_Status<br>6=DLM_Link_Status<br>7=MAGIC_DLM_LINK_Status
+Status-Type	10003	Unsigned32	(同 REQ-Status-Info)
+DLM-Name	10004	UTF8String	数据链路模块名称
+DLM-Available	10005	Enumerated	1=YES<br>2=NO<br>3=UNKNOWN
+DLM-Max-Bandwidth	10006	Float32	最大带宽 (kbps)
+DLM-Allocated-Bandwidth	10007	Float32	已分配带宽 (kbps)
+DLM-Max-Return-Bandwidth	10008	Float32	最大回传带宽 (kbps)
+DLM-Allocated-Return-Bandwidth	10009	Float32	已分配回传带宽 (kbps)
+DLM-Max-Links	10010	Unsigned32	最大链路数
+DLM-Allocated-Links	10011	Unsigned32	已分配链路数
+Link-Number	10012	Unsigned32	链路编号
+Link-Available	10013	Enumerated	1=YES<br>2=NO
+Link-Connection-Status	10014	Enumerated	1=Disconnected<br>2=Connected<br>3=Forced_Close
+Link-Login-Status	10015	Enumerated	1=Logged off<br>2=Logged on
+Link-Max-Bandwidth	10016	Float32	链路最大带宽
+Link-Max-Return-Bandwidth	10017	Float32	链路最大回传带宽
+Link-Alloc-Bandwidth	10018	Float32	链路已分配带宽
+Link-Alloc-Return-Bandwidth	10019	Float32	链路已分配回传带宽
+Link-Error-String	10020	UTF8String	链路错误信息
+Requested-Bandwidth	10021	Float32	请求带宽
+Requested-Return-Bandwidth	10022	Float32	请求回传带宽
+Required-Bandwidth	10023	Float32	必需带宽
+Required-Return-Bandwidth	10024	Float32	必需回传带宽
+Priority-Class	10025	UTF8String	优先级类别 (基于 RFC 3260)
+Priority-Type	10026	Enumerated	1=Blocking<br>2=Preemption
+QoS-Level	10027	Enumerated	0=BE (Best Effort)<br>1=AF (Assured Forwarding)<br>2=EF (Expedited Forwarding)
+DLM-Availability-List	10028	UTF8String	DLM 可用列表 (黑/白名单字符串)
+Gateway-IPAddress	10029	UTF8String	网关 IP 地址
+TFTtoGround-Rule	10030	UTF8String	飞往地面的流量模板规则
+TFTtoAircraft-Rule	10031	UTF8String	地往飞机的流量模板规则
+NAPT-Rule	10032	UTF8String	网络地址转换规则字符串
+Flight-Phase	10033	UTF8String	飞行阶段 (如: GATE, TAXI, CRUISE)
+Altitude	10034	UTF8String	高度范围字符串
+Airport	10035	UTF8String	机场代码列表字符串
+Accounting-Enabled	10036	Unsigned32	0=Accounting Disabled
+Keep-Request	10037	Enumerated	0=NO<br>1=YES
+Auto-Detect	10038	Enumerated	0=NO<br>1=YES-Symmetric<br>2=YES-Asymmetric
+Timeout	10039	Unsigned32	超时时间 (秒)
+Profile-Name	10040	UTF8String	配置文件名称
+Registered-Clients	10041	UTF8String	已注册客户端列表
+CDR-Type	10042	Enumerated	1=LIST_REQUEST<br>2=DATA_REQUEST
+CDR-Level	10043	Enumerated	1=ALL<br>2=USER_DEPENDENT<br>3=SESSION_DEPENDENT
+CDR-Request-Identifier	10044	UTF8String	CDR 请求标识符
+Server-Password	10045	UTF8String	服务器密码
+CDR-ID	10046	Unsigned32	CDR 唯一标识 ID
+CDR-Content	10047	UTF8String	CDR 数据内容
+CDR-Restart-Session-Id	10048	UTF8String	重启会话的 ID
+CDR-Stopped	10049	Unsigned32	停止记录的 CDR ID
+CDR-Started	10050	Unsigned32	开始记录的 CDR ID
+Granted-Bandwidth	10051	Float32	准许带宽
+Granted-Return-Bandwidth	10052	Float32	准许回传带宽
+MAGIC-Status-Code	10053	Unsigned32	MAGIC 状态码 (见下文列表)
+Link-Name	10054	UTF8String	链路名称
+3.2 组合 AVP (Grouped AVPs)
+这些 AVP 包含其他的 AVP。在 freeDiameter 中定义字典时，需要指定其内部结构。
+Grouped AVP Name	Code	Contains (Simplified)
+Communication-Request-Parameters	20001	Profile-Name, Requested-Bandwidth, Priority-Type, Priority-Class, DLM-Name, QoS-Level, Flight-Phase, Altitude, Airport, TFTtoGround-List, TFTtoAircraft-List, NAPT-List, Keep-Request, Auto-Detect, Timeout, etc.
+Communication-Answer-Parameters	20002	Profile-Name, Granted-Bandwidth, Priority-Type, Priority-Class, TFTtoGround-List, TFTtoAircraft-List, QoS-Level, Accounting-Enabled, DLM-Availability-List, Keep-Request, Auto-Detect, Timeout, Flight-Phase, Altitude, Airport, NAPT-List, Gateway-IPAddress, etc.
+Communication-Report-Parameters	20003	Profile-Name, Granted-Bandwidth, Priority-Type, Priority-Class, TFTtoGround-List, TFTtoAircraft-List, QoS-Level, DLM-Availability-List, NAPT-List, Gateway-IPAddress, etc.
+TFTtoGround-List	20004	1*255 { TFTtoGround-Rule }
+TFTtoAircraft-List	20005	1*255 { TFTtoAircraft-Rule }
+NAPT-List	20006	1*255 { NAPT-Rule }
+DLM-List	20007	1* { DLM-Info }
+DLM-Info	20008	DLM-Name, DLM-Available, DLM-Max-Links, DLM-Max-Bandwidth, DLM-Max-Return-Bandwidth, DLM-Allocated-Links, DLM-Allocated-Bandwidth, DLM-Allocated-Return-Bandwidth, DLM-QoS-Level-List, DLM-Link-Status-List
+DLM-QoS-Level-List	20009	1*3 { QoS-Level }
+DLM-Link-Status-List	20010	1* { Link-Status-Group }
+Link-Status-Group	20011	Link-Name, Link-Number, Link-Available, QoS-Level, Link-Connection-Status, Link-Login-Status, Link-Max-Bandwidth, Link-Max-Return-Bandwidth, Link-Alloc-Bandwidth, Link-Alloc-Return-Bandwidth, Link-Error-String
+CDRs-Active	20012	1* { CDR-Info }
+CDRs-Finished	20013	1* { CDR-Info }
+CDRs-Forwarded	20014	1* { CDR-Info }
+CDRs-Unknown	20015	1* { CDR-ID }
+CDRs-Updated	20016	1* { CDR-Start-Stop-Pair }
+CDR-Info	20017	1* { CDR-ID }, optional { CDR-Content }
+CDR-Start-Stop-Pair	20018	{ CDR-Stopped }, { CDR-Started }
+Client-Credentials	20019	{ User-Name }, { Client-Password }
+4. 状态码 (Result Codes & MAGIC-Status-Code)
+这些值用于填充 MAGIC-Status-Code AVP (10053)。(Ref: Page 96, Section 1.3.2)
+这些代码将用于 freeDiameter 字典中，分别映射到 Diameter 标准的 Result-Code AVP (Code 268) 和该协议特有的 MAGIC-Status-Code AVP (Code 10053)。
+1. 标准 Diameter 结果码 (Result-Code AVP, Code 268)
+这些代码遵循 RFC 6733。MAGIC 协议明确使用了以下值：
+结果码 (Value)	标识符 (Identifier)	含义描述
+2001	DIAMETER_SUCCESS	请求成功完成
+3001	DIAMETER_COMMAND_UNSUPPORTED	MAGIC 服务器不支持该命令
+3002	DIAMETER_UNABLE_TO_DELIVER	无法送达目标节点
+3004	DIAMETER_TOO_BUSY	服务器太忙，无法处理
+3006	DIAMETER_REDIRECT_INDICATION	重定向指示
+3007	DIAMETER_CLIENT_UNSUPPORTED	客户端不受支持
+4001	DIAMETER_AUTHENTICATION_REJECTED	认证被拒绝
+5001	DIAMETER_AVP_UNSUPPORTED	命令中包含不支持的 AVP
+5002	DIAMETER_UNKNOWN_SESSION_ID	未找到对应的 Session-Id
+5004	DIAMETER_INVALID_AVP_VALUE	AVP 包含的值超出了定义范围
+5005	DIAMETER_MISSING_AVP	命令中缺少必要的 AVP
+5008	DIAMETER_AVP_NOT_ALLOWED	该命令中不允许出现此 AVP
+2. MAGIC 协议专有状态码 (MAGIC-Status-Code AVP, Code 10053)
+这些代码定义在标准文档的 Page 96-98，用于更精细地描述航空空地通信场景下的错误。
+2.1 错误类 (Error Codes, 1xxx - 3xxx)
+代码 (Value)	标识符 (Name)	详细含义
+1000	MAGIC-ERROR_MISSING-AVP	缺少重要的 AVP，导致无法处理消息
+1001	MAGIC-ERROR_AUTHENTICATION-FAILED	客户端提供的用户名或密码错误
+1002	MAGIC-ERROR_UNKNOWN-SESSION	Session-Id 在数据库中不存在或已超时
+1003	MAGIC-ERROR_MAGIC-NOT-RUNNING	MAGIC 服务已终止或初始化未完成
+1004	MAGIC-ERROR_ENUMERATION-OUT-OF-RANGE	解析枚举值时发现数值越界
+1005	MAGIC-ERROR_MALFORMED-LINK-STRING	LINK 字符串格式解析错误
+1006	MAGIC-ERROR_MALFORMED-QOS-STRING	QoS 字符串格式解析错误
+1007	MAGIC-ERROR_MALFORMED-TFT-STRING	TFT 字符串格式解析错误
+1008	MAGIC-ERROR_MALFORMED-DATA-LINK-STRING	DATA-Link 字符串格式解析错误
+1009	MAGIC-ERROR_MALFORMED-CHANNEL-STATUS-STRING	频道状态字符串格式解析错误
+1010	MAGIC-ERROR_ADD-SESSION-FAILED	无法在系统中创建新会话
+1011	MAGIC-ERROR_MODIFY-SESSION-FAILED	无法修改现有会话的参数
+1012	MAGIC-ERROR_OPEN-LINK-FAILED-DEPRECTED	打开链路失败（已弃用，见2006）
+1013	MAGIC-ERROR_NO-ENTRY-IN-BANDWIDTHTABLE	带宽共享表中没有找到该客户端的条目
+1014	MAGIC-ERROR_NO-OPEN-LINKS	请求处理时没有可用的打开链路
+1015	MAGIC-ERROR_AMBIGOUS-BANDWIDTHTABLE-PERCENTAGE	带宽分配比例定义含糊不清
+1016	MAGIC-ERROR_NO-FREE-BANDWIDTH	系统已无剩余带宽可供分配
+1017	MAGIC-ERROR_MISSING-PARAMETER	请求无法处理，因为缺少必要的会话参数
+1018	MAGIC-ERROR_CLIENT-REGISTRATION	新客户端开启了会话（仅供内部信息记录）
+1019	MAGIC-ERROR_CLIENT-UNREGISTRATION	客户端关闭了最后一个会话
+1020	MAGIC-ERROR_ILLEGAL-FLIGHT-PHASE	当前飞行阶段（如起飞中）不允许建立此会话
+1021	MAGIC-ERROR_ILLEGAL-PARAMETER	客户端请求的参数违反了该客户端的预设规则
+1022	MAGIC-ERROR_STATUS-ACCESS-DENIED	客户端无权获取全局或链路状态信息
+1023	MAGIC-ERROR_ACCOUNTING-ACCESS-DENIED	客户端无权访问计费/账单数据
+1024	MAGIC-ERROR_ACCOUNTING-CONTROL-DENIED	客户端无权控制计费记录（如重启CDR）
+1025	MAGIC-ERROR_MAGIC-SHUTDOWN	MAGIC 服务正在执行去初始化/关闭程序
+1026	MAGIC-ERROR_ACCOUNTING-INVALID-CDRID	提供的 CDR ID 无效
+1027	MAGIC-ERROR_MALFORMED-CDR-STRING	CDR 字符串格式解析错误
+1028	MAGIC-ERROR_SESSION-IS-BLOCKED-DEPRECTED	会话被阻塞（已弃用）
+1029	MAGIC-ERROR_MALFORMED-NAPT-STRING	NAPT 字符串格式解析错误
+1030	MAGIC-ERROR_MALFORMED-AIRPORTLIST-STRING	机场列表字符串格式解析错误
+1031	MAGIC-ERROR_MALFORMED-FLIGHTPHASELIST-STRING	飞行阶段列表字符串格式解析错误
+1032	MAGIC-ERROR_MALFORMED-ALTITUDELIST-STRING	高度列表字符串格式解析错误
+1033	MAGIC-ERROR_MALFORMED-DLMLIST-STRING	DLM 列表字符串格式解析错误
+1034	MAGIC-ERROR_MALFORMED-PRIO-CLASS-STRING	优先级类别字符串格式解析错误
+1035	MAGIC-ERROR_PROFILE-DOES-NOT-EXITS	请求中引用的配置文件名称不存在
+1036	MAGIC-ERROR_TFT-INVALID	提供的 TFT 参数无效
+1037	MAGIC-ERROR_NAPT-INVALID	提供的 NAPT 参数无效
+2000	MAGIC-ERROR_AIS-INTERRUPED	AIS 域服务中断
+2001	MAGIC-ERROR_FLIGHT-PHASE-ERROR	飞行阶段数据获取错误
+2002	MAGIC-ERROR_AIRPORT-ERROR	机场数据获取错误
+2003	MAGIC-ERROR_ALTITUDE-ERROR	高度数据获取错误
+2004	MAGIC-ERROR_NO-BANDWIDTH-ASSIGNMENT	无法执行带宽分配逻辑
+2005	MAGIC-ERROR_REQUEST-NOT-PROCESSED	请求未被处理
+2006	MAGIC-ERROR_OPEN-LINK-FAILED	尝试打开多链路或附加链路失败
+2007	MAGIC-ERROR_LINK-ERROR	通用链路错误
+2008	MAGIC-ERROR_CLOSE-LINK-FAILED	关闭链路操作失败
+2009	MAGIC-ERROR_MAGIC-FAILURE	MAGIC 内部核心功能故障
+3000	MAGIC-ERROR_UNKNOWN-ISSUE	未知问题/未定义的错误
+3001	MAGIC-ERROR_AVIONICSDATA-MISSING	关键航电参数数据缺失
+2.2 信息/通知类 (Info Codes, 1038 - 1048 & 2010)
+代码 (Value)	标识符 (Name)	详细含义
+1038	MAGIC-INFO_SET-LINK-QOS	链路 QoS 已成功设置
+1039	MAGIC-INFO_REMOVE-LINK-QOS	链路 QoS 已成功移除
+1040	MAGIC-INFO_SET-DEFAULTROUTE	已设置默认路由
+1041	MAGIC-INFO_REMOVE-DEFAULTROUTE	已移除默认路由
+1042	MAGIC-INFO_SET-POLICYROUTING	已应用策略路由规则
+1043	MAGIC-INFO_REMOVE-POLICYROUTING	已移除策略路由规则
+1044	MAGIC-INFO_SET-NAPT	已应用 NAPT 规则
+1045	MAGIC-INFO_REMOVE-NAPT	已移除 NAPT 规则
+1046	MAGIC-INFO_SET-SESSION-QOS	会话级别的 QoS 已生效
+1047	MAGIC-INFO_REMOVE-SESSION-QOS	会话级别的 QoS 已移除
+1048	MAGIC-INFO_INTERNAL-ERROR	记录了一个非致命的内部错误
+2010	MAGIC-INFO_FORCED_REROUTING	MAGIC 强制执行了链路重新路由
+给 freeDiameter 设计者的建议：
+Result-Code 应当放入 freeDiameter 字典文件的 <results> 部分。
+MAGIC-Status-Code 是一个普通的 AVP，建议在字典中定义其类型为 Unsigned32，并为其定义对应的 ENUM 列表，以便在解析时能够显示出上述字符串标识符。
