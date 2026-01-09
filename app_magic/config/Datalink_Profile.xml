@@ -1,0 +1,189 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- 
+    ============================================================================
+    ARINC 839 MAGIC 链路配置文件 (DLM Configuration)
+    ============================================================================
+    场景: 标准三链路配置 (Wifi, Cellular, Satcom)
+    结构对应: C语言结构体 DLMConfig
+    单位: 带宽(kbps), 延迟(ms), 丢包率(0.0-1.0)
+    ============================================================================
+-->
+<DLMConfigs>
+
+    <!-- 
+    ############################################################################
+    # DLM 1: 卫星通信 (LINK_SATCOM)
+    # 特征: 无论飞机在哪里都能连接，作为最后的保底链路
+    # 缺点: 延迟高(GEO卫星约600ms)，带宽昂贵
+    ############################################################################
+    -->
+    <DLMConfig>
+        <DLMName>LINK_SATCOM</DLMName>
+        <Description>Satellite Communications (Inmarsat/Iridium)</Description>
+        <Enabled>true</Enabled>
+        <DLMType>1</DLMType> <!-- 1=Satellite -->
+
+        <Links>
+            <Link>
+                <LinkName>Satcom-Modem</LinkName>
+                <LinkNumber>1</LinkNumber>
+                <Enabled>true</Enabled>
+
+                <!-- 容量: 20 Mbps 下行 / 2 Mbps 上行 -->
+                <MaxForwardBW>20480.0</MaxForwardBW>
+                <MaxReturnBW>2048.0</MaxReturnBW>
+                <!-- 卫星允许 20% 超售 -->
+                <OversubscriptionRatio>1.2</OversubscriptionRatio>
+
+                <SupportedQoS>
+                    <Level>0</Level> <!-- BE -->
+                    <Level>1</Level> <!-- AF -->
+                    <Level>2</Level> <!-- EF (支持语音所需的优先级转发) -->
+                </SupportedQoS>
+
+                <!-- 物理特性: 高延迟是卫星的主要特征 -->
+                <Latency>600</Latency>
+                <Jitter>50</Jitter>
+                <PacketLossRate>0.001</PacketLossRate>
+
+                <!-- 模拟 MIH 接口地址 -->
+                <MIHFID>mihf_satcom</MIHFID>
+                <MIHFAddress>127.0.0.1</MIHFAddress>
+                <MIHFPort>4551</MIHFPort>
+            </Link>
+        </Links>
+
+        <LoadBalance>
+            <Algorithm>3</Algorithm> <!-- Priority: 除非没别的网，否则不优先用卫星 -->
+            <EnableFailover>true</EnableFailover>
+            <HealthCheckInterval>5</HealthCheckInterval>
+        </LoadBalance>
+
+        <Coverage>
+            <Enabled>true</Enabled>
+            <!-- 全球覆盖 -->
+            <MinLatitude>-90.0</MinLatitude>
+            <MaxLatitude>90.0</MaxLatitude>
+            <MinLongitude>-180.0</MinLongitude>
+            <MaxLongitude>180.0</MaxLongitude>
+            <!-- 全高度覆盖 -->
+            <MinAltitude>0</MinAltitude>
+            <MaxAltitude>60000</MaxAltitude>
+        </Coverage>
+    </DLMConfig>
+
+
+    <!-- 
+    ############################################################################
+    # DLM 2: 蜂窝网络 (LINK_CELLULAR)
+    # 特征: ATG (地空宽带) 或 地面漫游 4G/5G
+    # 优势: 延迟比卫星低很多，带宽较大
+    ############################################################################
+    -->
+    <DLMConfig>
+        <DLMName>LINK_CELLULAR</DLMName>
+        <Description>Cellular/ATG Network (4G/5G/LTE)</Description>
+        <Enabled>true</Enabled>
+        <DLMType>2</DLMType> <!-- 2=ATG/Cellular -->
+
+        <Links>
+            <Link>
+                <LinkName>Cellular-Modem</LinkName>
+                <LinkNumber>1</LinkNumber>
+                <Enabled>true</Enabled>
+
+                <!-- 容量: 50 Mbps 下行 / 10 Mbps 上行 -->
+                <MaxForwardBW>51200.0</MaxForwardBW>
+                <MaxReturnBW>10240.0</MaxReturnBW>
+                <OversubscriptionRatio>1.0</OversubscriptionRatio>
+
+                <SupportedQoS>
+                    <Level>0</Level> <!-- BE -->
+                    <Level>1</Level> <!-- AF -->
+                    <!-- 蜂窝网络抖动较大，暂不支持 EF -->
+                </SupportedQoS>
+
+                <Latency>80</Latency>
+                <Jitter>20</Jitter>
+                <PacketLossRate>0.005</PacketLossRate>
+
+                <MIHFID>mihf_cellular</MIHFID>
+                <MIHFAddress>127.0.0.1</MIHFAddress>
+                <MIHFPort>4552</MIHFPort>
+            </Link>
+        </Links>
+
+        <LoadBalance>
+            <Algorithm>2</Algorithm> <!-- LeastLoaded -->
+            <EnableFailover>true</EnableFailover>
+            <HealthCheckInterval>2</HealthCheckInterval>
+        </LoadBalance>
+
+        <Coverage>
+            <Enabled>true</Enabled>
+            <!-- 仅在陆地上空或特定区域有效，这里模拟全球可用但有高度限制 -->
+            <MinLatitude>-90.0</MinLatitude>
+            <MaxLatitude>90.0</MaxLatitude>
+            <MinLongitude>-180.0</MinLongitude>
+            <MaxLongitude>180.0</MaxLongitude>
+            <!-- 蜂窝信号通常在 10000 英尺以下(地面基站) 或 10000以上(ATG) -->
+            <!-- 这里设置为通用覆盖 -->
+            <MinAltitude>0</MinAltitude>
+            <MaxAltitude>45000</MaxAltitude>
+        </Coverage>
+    </DLMConfig>
+
+
+    <!-- 
+    ############################################################################
+    # DLM 3: 无线局域网 (LINK_WIFI)
+    # 特征: Gatelink，仅在飞机停靠地面时连接机场 Wi-Fi
+    # 优势: 极高带宽，极低延迟，通常免费
+    ############################################################################
+    -->
+    <DLMConfig>
+        <DLMName>LINK_WIFI</DLMName>
+        <Description>Airport Gatelink Wi-Fi (Ground Only)</Description>
+        <Enabled>true</Enabled>
+        <DLMType>3</DLMType> <!-- 3=Hybrid/Ground -->
+
+        <Links>
+            <Link>
+                <LinkName>WiFi-Interface</LinkName>
+                <LinkNumber>1</LinkNumber>
+                <Enabled>true</Enabled>
+
+                <!-- 容量: 300 Mbps -->
+                <MaxForwardBW>307200.0</MaxForwardBW>
+                <MaxReturnBW>307200.0</MaxReturnBW>
+                <OversubscriptionRatio>1.0</OversubscriptionRatio>
+
+                <SupportedQoS>
+                    <Level>0</Level> <!-- Wi-Fi 只有尽力而为 -->
+                </SupportedQoS>
+
+                <Latency>5</Latency>
+                <Jitter>2</Jitter>
+                <PacketLossRate>0.01</PacketLossRate>
+
+                <MIHFID>mihf_wifi</MIHFID>
+                <MIHFAddress>127.0.0.1</MIHFAddress>
+                <MIHFPort>4553</MIHFPort>
+            </Link>
+        </Links>
+
+        <LoadBalance>
+            <Algorithm>1</Algorithm> <!-- RoundRobin -->
+            <EnableFailover>false</EnableFailover>
+            <HealthCheckInterval>10</HealthCheckInterval>
+        </LoadBalance>
+
+        <Coverage>
+            <Enabled>true</Enabled>
+            <!-- 严格的高度限制: 仅地面 (0-500英尺容差) -->
+            <MinAltitude>0</MinAltitude>
+            <MaxAltitude>500</MaxAltitude>
+        </Coverage>
+    </DLMConfig>
+
+</DLMConfigs>
