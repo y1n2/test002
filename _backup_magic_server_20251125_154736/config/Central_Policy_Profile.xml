@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CentralPolicyProfile version="2.0">
+
+    <AvailableLinks>
+        <Link id="LINK_SATCOM" />
+        <Link id="LINK_CELLULAR" />
+        <Link id="LINK_WIFI" />
+    </AvailableLinks>
+
+    <PolicyRuleSet id="GROUND_OPS" flight_phases="PARKED">
+        
+        <PolicyRule traffic_class="BULK_DATA">
+            <PathPreference ranking="1" link_id="LINK_WIFI" />
+            <PathPreference ranking="2" link_id="LINK_CELLULAR" />
+            <PathPreference ranking="3" link_id="LINK_SATCOM" action="PROHIBIT"/>
+        </PolicyRule>
+        
+        <PolicyRule traffic_class="COCKPIT_DATA">
+            <PathPreference ranking="1" link_id="LINK_CELLULAR" />
+            <PathPreference ranking="2" link_id="LINK_WIFI" security_required="VPN"/>
+        </PolicyRule>
+    </PolicyRuleSet>
+
+    <PolicyRuleSet id="LOW_ALTITUDE_OPS" flight_phases="TAXI, TAKEOFF, APPROACH, LANDING">
+        
+        <PolicyRule traffic_class="ALL_TRAFFIC">
+            <PathPreference ranking="1" link_id="LINK_CELLULAR" />
+            <PathPreference ranking="2" link_id="LINK_SATCOM" />
+            <PathPreference ranking="3" link_id="LINK_WIFI" action="PROHIBIT"/>
+        </PolicyRule>
+    </PolicyRuleSet>
+
+    <PolicyRuleSet id="HIGH_ALTITUDE_OPS" flight_phases="CRUISE, OCEANIC">
+        
+        <PolicyRule traffic_class="ALL_TRAFFIC">
+            <PathPreference ranking="1" link_id="LINK_SATCOM" />
+            <PathPreference ranking="2" link_id="LINK_CELLULAR" action="PROHIBIT"/>
+            <PathPreference ranking="3" link_id="LINK_WIFI" action="PROHIBIT"/>
+        </PolicyRule>
+    </PolicyRuleSet>
+
+</CentralPolicyProfile>

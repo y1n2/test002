@@ -1,0 +1,103 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ClientProfiles version="2.2" effective_date="2025-11-23">
+    
+    <Client id="EFB_NAV_APP_01">
+        
+        <Authentication type="MAGIC_AWARE">
+            <Username>EFB_NAV_USER</Username>
+            <Password>efb_dev_pass_123</Password>
+            <PrimaryKey>EFB_SN_A123</PrimaryKey>
+        </Authentication>
+        
+        <Metadata>
+            <HardwareType>EFB_CLASS_3</HardwareType>
+            <SystemRole>FLIGHT_CRITICAL</SystemRole>
+            <AircraftApplicationID>A01_NAV_DATA_01</AircraftApplicationID>
+        </Metadata>
+        
+        <Limits>
+            <MaxSessionBandwidthKbps>2048</MaxSessionBandwidthKbps> <TotalClientBandwidthKbps>3072</TotalClientBandwidthKbps> <MaxConcurrentSessions>5</MaxConcurrentSessions>        </Limits>
+
+        <PolicyMapping>
+            <TrafficClassID>NAVIGATION_SAFETY</TrafficClassID>
+        </PolicyMapping>
+    </Client>
+
+
+    <Client id="LEGACY_AVIONICS_02">
+        <Authentication type="NON_AWARE"/>
+        
+        <IPPortFilter>
+            <SourceIpAddress>192.168.100.20</SourceIpAddress>
+            <DestinationIpPort>AOC_SERVER_IP:443</DestinationIpPort>
+        </IPPortFilter>
+        
+        <Metadata>
+            <HardwareType>LEGACY_AVIONICS_UNIT</HardwareType>
+            <SystemRole>ACARS_COMMS</SystemRole>
+            <AircraftApplicationID>A02_ACARS_COMMS</AircraftApplicationID>
+        </Metadata>
+        
+        <Limits>
+            <MaxSessionBandwidthKbps>64</MaxSessionBandwidthKbps>
+            <TotalClientBandwidthKbps>64</TotalClientBandwidthKbps>
+            <MaxConcurrentSessions>1</MaxConcurrentSessions>
+        </Limits>
+
+        <PolicyMapping>
+            <TrafficClassID>COMPANY_AOC_CRITICAL</TrafficClassID>
+        </PolicyMapping>
+    </Client>
+
+
+    <Client id="PASSENGER_SUBNET_03">
+        <Authentication type="NON_AWARE"/>
+        
+        <IPPortFilter>
+            <SourceIpAddress>192.168.200.0/24</SourceIpAddress>
+            <DestinationPortList>80, 443, 53, 8080</DestinationPortList>
+        </IPPortFilter>
+        
+        <Metadata>
+            <HardwareType>BYOD_DEVICES</HardwareType>
+            <SystemRole>PASSENGER_ENTERTAINMENT</SystemRole>
+            <AircraftApplicationID>A03_PAX_WIFI_SERVICE</AircraftApplicationID>
+        </Metadata>
+        
+        <Limits>
+            <MaxSessionBandwidthKbps>5120</MaxSessionBandwidthKbps>
+            <TotalClientBandwidthKbps>50000</TotalClientBandwidthKbps>
+            <MaxConcurrentSessions>200</MaxConcurrentSessions>
+        </Limits>
+
+        <PolicyMapping>
+            <TrafficClassID>PASSENGER_ENTERTAINMENT</TrafficClassID>
+        </PolicyMapping>
+    </Client>
+
+
+    <Client id="CABIN_CREW_APP_04">
+        <Authentication type="MAGIC_AWARE">
+            <Username>CABIN_LEAD_USER</Username>
+            <Password>cabin_crew_secret_2025</Password>
+            <PrimaryKey>CREW_TABLET_SN_X99</PrimaryKey>
+        </Authentication>
+        
+        <Metadata>
+            <HardwareType>CREW_TABLET_CLASS_2</HardwareType>
+            <SystemRole>CABIN_OPERATIONS</SystemRole>
+            <AircraftApplicationID>A04_CABIN_OPS</AircraftApplicationID>
+        </Metadata>
+        
+        <Limits>
+            <MaxSessionBandwidthKbps>256</MaxSessionBandwidthKbps>
+            <TotalClientBandwidthKbps>1024</TotalClientBandwidthKbps>
+            <MaxConcurrentSessions>3</MaxConcurrentSessions>
+        </Limits>
+
+        <PolicyMapping>
+            <TrafficClassID>PASSENGER_CHAT</TrafficClassID>
+        </PolicyMapping>
+    </Client>
+
+</ClientProfiles>

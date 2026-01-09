@@ -1,0 +1,123 @@
+RINC 839 MAGIC 软件系统设计方案
+1. 系统总体架构 (System Architecture)
+根据 ARINC 839 的定义，MAGIC 位于机载网络服务系统（NSS）中，处于应用层（Clients）和物理链路层（Modems）之间。
+
+我们将软件划分为四个核心层级：
+
+
+北向接口层 (Northbound - Client Interface): 负责处理客户端（如 EFB、IFE）的接入、认证和带宽请求 。
+
+
+核心逻辑层 (Core Logic - Central Management): 系统的“大脑”，负责根据策略（Policy）和配置文件（Profile）进行路由决策 。
+
+
+南向接口层 (Southbound - Link Management): (重点设计) 负责屏蔽不同物理链路的差异，通过数据链路模块（DLM）对调制解调器进行统一管理 。
+
+
+执行层 (Enforcement - Network Management): 负责实际操作操作系统的网络栈（如 iptables, iproute2），执行路由、QoS 排队和防火墙规则 。
+
+2. 接口模块详细设计
+2.1 客户端接口模块 (Client Interface Controller - CIC)
+规范参考: Section 4.1 & Attachment 1
+
+
+功能: 提供基于 Diameter 协议的接口，供 MAGIC-Aware（感知型）客户端进行认证、授权和计费 (AAA) 。
+
+
+模块组件:
+
+Diameter Server Stack: 实现 RFC 6733 基础协议及 MAGIC 扩展命令。
+
+Session Manager: 维护客户端会话状态（Session-Id, Timeout）。
+
+命令处理器 (Command Handlers):
+
+
+MCAR/MCAA (MAGIC Client Authentication): 处理客户端登录，验证 Client-Credentials 。
+
+
+MCCR/MCCA (Communication Change): 处理带宽申请（Requested-Bandwidth）和 QoS 等级请求 。
+
+
+MNTR/MNTA (Notification): 当链路状态改变时，主动推送消息给客户端 。
+
+2.2 网络管理模块 (Network Management)
+规范参考: Section 3.2.4.2 功能: 将 CM 的决策转化为底层的网络配置。
+
+
+Routing Engine: 操作路由表，根据 CM 选定的 DLM 配置默认路由或策略路由 (Policy Based Routing) 。
+
+
+QoS Engine: 使用流量整形工具（如 Linux TC/HTB）实现 Granted-Bandwidth 的限制，确保高优先级客户端不被抢占 。
+
+
+Firewall Controller: 动态配置 NAT 和过滤规则，实现文档中提到的 Traffic Flow Templates (TFT) 过滤 。
+
+3. 链接管理接口设计 (Link Management Interface - LMI)
+规范参考: Section 4.2 & Attachment 2
+
+
+设计重点: 这是用户要求的核心部分。该模块实现了 IEEE 802.21 MIH (Media Independent Handover) 的修改版，用于抽象化底层硬件 。
+
+3.1 架构设计模式
+采用 适配器模式 (Adapter Pattern)。
+
+Common Link Interface (CLI): 定义一组标准化的 API（虚函数），对应 ARINC 839 定义的原语 (Primitives)。
+
+
+Data Link Module (DLM): 具体的驱动实现类（如 SatcomDLM, LteDLM），负责将 CLI 调用翻译为特定调制解调器的 AT 指令或 SNMP 消息 。
+
+
+3.4 DLM 模块内部逻辑 (DLM Implementation)
+每个 DLM 是一个独立的进程或动态库，它必须维护一个状态机来管理物理链路。
+
+DLM 工作流程示例 (以卫星链路为例):
+
+
+初始化: 加载 Link Profile（定义了该链路是 SwiftBroadband 还是 Ka-Band）。
+
+注册: 通过 Common Link Interface 向 MAGIC Core 注册自己。
+
+资源请求处理 (Link_Resource):
+
+MAGIC Core 调用 requestResource(min=256kbps)。
+
+SatcomDLM 将此转换为卫星终端的特定指令（例如：Inmarsat BGAN 的 PDP Context 激活指令 AT+CGACT 或特定 API 调用）。
+
+硬件返回成功后，DLM 更新内部状态并返回 LinkResourceConfirm 给 CM。
+
+
+状态监控: 周期性轮询硬件，若发现信号丢失，通过 Link_Event 回调通知 CM 。
+
+4. 中央管理模块 (Central Management - CM)
+规范参考: Section 3.2.4.1 功能: 协调北向需求和南向资源。
+
+Policy Engine (策略引擎):
+
+读取 Client Profiles (定义谁可以上网，优先级多少) 。
+
+读取 Central Policy Profile (定义业务规则，例如“起飞阶段禁用高带宽流媒体”或“首选低成本链路”) 。
+
+Decision Logic (决策逻辑):
+
+收到 CIC 的带宽请求。
+
+检查 LMI 层所有可用 DLM 的状态。
+
+匹配 Policy（如：EFB 数据必须走加密链路）。
+
+选择最佳 DLM。
+
+通过 LMI 下发 Link_Resource 指令建立连接。
+
+通过 Network Module 配置路由表将该 Client 的 IP 流量导向选定的网卡。
+
+5. 开发建议与后续步骤
+
+阶段 1 (Phase 1): 优先实现 CIC (Diameter) 和 LMI (CLI) 的骨架。开发一个 "Dummy DLM" 模拟硬件行为，用于打通 CM 的状态机逻辑 。
+
+
+安全性 (Security): 在 CIC 模块实现 TLS 加密，确保 Diameter 通信安全。在 LMI 层，DLM 需要验证 CM 的调用权限 。
+
+
+日志与计费 (Logging & Accounting): 在 LMI 层的 Link_Resource 成功建立后，必须生成 CDR (Call Data Record) 并记录到审计日志中，这是 ARINC 839 第 5 章的强制要求 。

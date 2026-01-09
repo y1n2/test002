@@ -1,0 +1,12 @@
+authorityKeyIdentifier = keyid, issuer
+basicConstraints = CA:FALSE
+keyUsage = critical, digitalSignature, keyEncipherment
+extendedKeyUsage = clientAuth
+subjectAltName = @alt_names
+
+[alt_names]
+DNS.1 = magic-client.example.com
+DNS.2 = magic-client-pc3.arinc839.local
+DNS.3 = localhost
+IP.1 = 127.0.0.1
+IP.2 = 192.168.10.5

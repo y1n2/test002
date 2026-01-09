@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<DatalinkProfiles version="2.0">
+
+    <Link id="LINK_SATCOM">
+        <LinkName>Inmarsat Global Xpress</LinkName>
+        <DLMDriverID>DLM_SATCOM_PROC</DLMDriverID>
+        <InterfaceName>eth1</InterfaceName>
+        <Type>SATELLITE</Type>
+        
+        <Capabilities>
+            <MaxTxRateKbps>2048</MaxTxRateKbps>
+            <TypicalLatencyMs>600</TypicalLatencyMs>
+        </Capabilities>
+        
+        <PolicyAttributes>
+            <CostIndex>90</CostIndex> <SecurityLevel>HIGH</SecurityLevel>
+            <Coverage>GLOBAL</Coverage>
+        </PolicyAttributes>
+    </Link>
+
+    <Link id="LINK_CELLULAR">
+        <LinkName>4G/5G AGT Network</LinkName>
+        <DLMDriverID>DLM_CELLULAR_PROC</DLMDriverID>
+        <InterfaceName>eth2</InterfaceName>
+        <Type>CELLULAR</Type>
+        
+        <Capabilities>
+            <MaxTxRateKbps>20000</MaxTxRateKbps>
+            <TypicalLatencyMs>50</TypicalLatencyMs>
+        </Capabilities>
+        
+        <PolicyAttributes>
+            <CostIndex>20</CostIndex> <SecurityLevel>MEDIUM</SecurityLevel>
+            <Coverage>TERRESTRIAL</Coverage>
+        </PolicyAttributes>
+    </Link>
+
+    <Link id="LINK_WIFI">
+        <LinkName>Airport Gatelink</LinkName>
+        <DLMDriverID>DLM_WIFI_PROC</DLMDriverID>
+        <InterfaceName>eth3</InterfaceName>
+        <Type>GATELINK</Type>
+        
+        <Capabilities>
+            <MaxTxRateKbps>100000</MaxTxRateKbps> <TypicalLatencyMs>5</TypicalLatencyMs>
+        </Capabilities>
+        
+        <PolicyAttributes>
+            <CostIndex>1</CostIndex> <SecurityLevel>LOW</SecurityLevel> <Coverage>GATE_ONLY</Coverage>
+        </PolicyAttributes>
+    </Link>
+
+</DatalinkProfiles>

@@ -1,0 +1,207 @@
+# MAGIC Client Configuration File
+# ================================
+# 
+# This is the main configuration file for the MAGIC client.
+# Copy this file to one of the following locations:
+#   - ./magic_client.conf (current directory)
+#   - ~/.magic_client.conf (user home directory)  
+#   - /etc/magic/client.conf (system-wide)
+
+# Server Configuration
+# ===================
+server = {
+    # Server hostname or IP address
+    hostname = "magic.example.com";
+    
+    # Server port (default Diameter port is 3868)
+    port = 3868;
+    
+    # Enable TLS encryption (recommended)
+    use_tls = true;
+    
+    # TLS certificate files (required if use_tls = true)
+    cert_file = "/etc/magic/client.crt";
+    key_file = "/etc/magic/client.key";
+    ca_file = "/etc/magic/ca.crt";
+    
+    # Connection timeouts (in seconds)
+    connect_timeout = 30;
+    response_timeout = 60;
+    
+    # Maximum connection retry attempts
+    max_retries = 3;
+};
+
+# Authentication Configuration
+# ===========================
+auth = {
+    # Unique client identifier
+    client_id = "magic_client_001";
+    
+    # Client secret (if required by server)
+    # client_secret = "your_client_secret_here";
+    
+    # User credentials
+    username = "your_username";
+    password = "your_password";
+    
+    # Authentication realm
+    realm = "magic.example.com";
+    
+    # Authentication timeout (in seconds)
+    auth_timeout = 30;
+    
+    # Automatic reconnection settings
+    auto_reconnect = true;
+    reconnect_interval = 60;
+};
+
+# Network Configuration
+# ====================
+network = {
+    # Preferred network interface (leave empty for auto-selection)
+    preferred_interface = "";
+    
+    # Automatically select best interface
+    auto_select_interface = true;
+    
+    # Backup original network configuration
+    backup_original_config = true;
+    
+    # Restore original configuration on exit
+    restore_on_exit = true;
+    
+    # Network connectivity test timeout (in seconds)
+    network_test_timeout = 10;
+    
+    # Bandwidth limit in KB/s (0 = unlimited)
+    bandwidth_limit = 0;
+    
+    # Test hosts for connectivity verification
+    test_hosts = [
+        "8.8.8.8",
+        "1.1.1.1",
+        "208.67.222.222"
+    ];
+};
+
+# Proxy Configuration
+# ==================
+proxy = {
+    # Enable local proxy server
+    enable_proxy = true;
+    
+    # Proxy server port
+    proxy_port = 8080;
+    
+    # Bind address (127.0.0.1 for localhost only)
+    bind_address = "127.0.0.1";
+    
+    # Maximum concurrent connections
+    max_connections = 100;
+    
+    # Connection timeout (in seconds)
+    connection_timeout = 30;
+    
+    # Log proxy requests
+    log_requests = false;
+    
+    # Allowed hosts (empty = allow all)
+    allowed_hosts = [
+        # "example.com",
+        # "*.google.com"
+    ];
+    
+    # Blocked hosts
+    blocked_hosts = [
+        # "malware.example.com",
+        # "*.ads.com"
+    ];
+};
+
+# Logging Configuration
+# ====================
+log = {
+    # Log level: DEBUG, INFO, WARNING, ERROR
+    log_level = "INFO";
+    
+    # Log file path
+    log_file = "/var/log/magic_client.log";
+    
+    # Enable console logging
+    log_to_console = true;
+    
+    # Enable file logging
+    log_to_file = true;
+    
+    # Enable syslog logging
+    log_to_syslog = false;
+    
+    # Maximum log file size in MB
+    max_log_size = 10;
+    
+    # Maximum number of log files to keep
+    max_log_files = 5;
+    
+    # Enable log rotation
+    rotate_logs = true;
+};
+
+# Monitoring Configuration
+# =======================
+monitor = {
+    # Enable connection monitoring
+    enable_monitoring = true;
+    
+    # Statistics collection interval (in seconds)
+    stats_interval = 60;
+    
+    # Statistics file path
+    stats_file = "/var/log/magic_client_stats.log";
+    
+    # Enable heartbeat monitoring
+    enable_heartbeat = true;
+    
+    # Heartbeat interval (in seconds)
+    heartbeat_interval = 30;
+    
+    # Heartbeat timeout (in seconds)
+    heartbeat_timeout = 10;
+    
+    # Enable bandwidth monitoring
+    enable_bandwidth_monitor = true;
+    
+    # Bandwidth check interval (in seconds)
+    bandwidth_check_interval = 10;
+};
+
+# Security Configuration
+# ======================
+security = {
+    # Verify server certificate
+    verify_server_cert = true;
+    
+    # Allow self-signed certificates (not recommended for production)
+    allow_self_signed = false;
+    
+    # Trusted CA directory
+    trusted_ca_dir = "/etc/ssl/certs";
+    
+    # Enable message encryption
+    enable_encryption = true;
+    
+    # Encryption algorithm
+    encryption_algorithm = "AES-256-GCM";
+    
+    # Enable message compression
+    enable_compression = false;
+    
+    # Maximum session time (in seconds)
+    max_session_time = 3600;
+    
+    # Auto logout on idle
+    auto_logout_on_idle = true;
+    
+    # Idle timeout (in seconds)
+    idle_timeout = 1800;
+};

@@ -1,0 +1,128 @@
+好的，我们来为您设计一个基于 freeDiameter 的 MAGIC 系统第一阶段（MVP）的具体开发方案。
+
+本方案将严格遵循您提供的 ARINC 839 规范，并专注于实现一个功能核心，以便于后续的迭代和扩展。
+
+-----
+
+### **方案概述：基于 freeDiameter 的 MAGIC MVP**
+
+[cite\_start]我们将利用 freeDiameter 作为 **客户端接口控制器 (CIC)** 的核心 [cite: 264][cite\_start]，它负责处理所有与 MAGIC-aware 客户端的 Diameter 协议交互。我们将开发一个 freeDiameter 的**扩展模块**，用于实现 ARINC 839 定义的 MAGIC 特定应用 [cite: 416, 431]。该模块将与我们独立开发的**中央管理 (CM)** 模块通信，以执行决策。
+
+#### **1. 系统整体结构**
+
+系统将由以下几个核心组件构成：
+
+  * **MAGIC 核心服务器**: 一台运行 Linux 的服务器，作为所有 MAGIC 功能的宿主。
+  * **客户端接口控制器 (CIC)**:
+      * **基础**: freeDiameter 守护进程。
+      * [cite\_start]**核心开发**: 一个自定义的 freeDiameter 扩展 (`.fdx` 模块)，用于处理 MAGIC Application ID (1094202169) 的所有请求 [cite: 431, 432]。
+  * **中央管理 (CM) 模块**: 一个独立的进程或库，负责解析配置文件、做出路由决策，并与其它模块通信。
+  * **数据链路模块 (DLMs)**: 作为独立的进程或库，模拟与 Satcom 和 Gatelink 控制器的交互。
+  * **网络管理模块**: 一个负责与操作系统内核（或模拟的路由器/防火墙）交互的模块，用于执行路由和防火墙规则的变更。
+  * **客户端/链路模拟器**: 运行在独立主机上的应用程序，用于模拟 EFB (作为客户端) 和链路控制器。
+
+#### **2. 网络拓扑与设备连接**
+
+为了在实验室环境中进行开发和测试，我们设计如下网络拓扑：
+
+  * **核心设备**: 一台可管理的网络交换机，支持 VLAN 功能。
+  * **MAGIC 服务器**: 连接到交换机。它将配置多个 VLAN 接口，分别对应不同的机载网络域（例如 VLAN 10 for AIS）。
+  * **客户端模拟器 (EFB)**: 一台笔记本电脑，连接到交换机的 AIS 域端口 (VLAN 10)。它将运行我们的 MAGIC-aware 客户端测试程序，以及像 `ping` 或 FTP 客户端这样的非 MAGIC-aware 应用。
+  * [cite\_start]**防火墙/路由器**: MAGIC 服务器本身将扮演此角色。我们将使用 Linux 内核的 `netfilter/iptables` 作为防火墙 [cite: 243][cite\_start]，使用 `iproute2` 工具集管理路由表 [cite: 248]，以模拟对外部网络设备的管理。
+  * **链路控制器模拟器**:
+      * **Satcom 模拟器**: 另一台主机或虚拟机，代表 Satcom 终端。MAGIC 服务器将通过一个独立的 VLAN (e.g., VLAN 20) 与其通信。
+      * **Gatelink 模拟器**: 同上，代表 Gatelink 终端，通过 VLAN 30 与 MAGIC 服务器通信。
+  * **外部网络**: 模拟器将连接到外部网络，代表地面站。
+
+#### **3. 核心数据流图 (Core Data Flow)**
+
+**数据流 1: MAGIC-Aware 客户端会话建立与数据传输**
+
+此流程描述了一个 EFB 上的 MAGIC-aware 应用程序请求建立通信会话的过程。
+
+```mermaid
+sequenceDiagram
+    participant Client as EFB Client (Aware)
+    participant CIC as CIC (freeDiameter)
+    participant CM as Central Management
+    participant NetMgmt as Network Mgmt
+    participant DLM as Satcom DLM
+
+    [cite_start]Client->>CIC: 1. 发送 MCAR (客户端认证请求) [cite: 477]
+    CIC->>CM: 2. 转发认证和会话请求
+    [cite_start]CM->>CM: 3. 解析策略：<br/>- 验证客户端凭证 [cite: 483][cite_start]<br/>- 检查客户端/链路/策略配置文件 [cite: 184]
+    CM->>DLM: 4. 选择Satcom链路，发送 "OpenLink" 指令
+    DLM-->>CM: 5. 确认链路可用
+    [cite_start]CM->>NetMgmt: 6. 指令: 为此客户端IP<br/>添加路由和防火墙规则 [cite: 286]
+    NetMgmt-->>CM: 7. 确认规则已应用
+    CM-->>CIC: 8. 授权成功，返回链路参数
+    [cite_start]CIC-->>Client: 9. 回复 MCAA (认证应答)，会话建立 [cite: 492]
+    Client->>Satcom DLM: 10. 开始发送IP数据包
+```
+
+**数据流 2: 非 MAGIC-Aware 客户端数据传输**
+
+此流程描述了一个传统应用程序（如 `ping`）在 EFB 上发起通信的过程。
+
+```mermaid
+sequenceDiagram
+    participant Client as EFB Client (Non-Aware)
+    participant NetMgmt as Network Mgmt
+    participant CM as Central Management
+    participant DLM as Gatelink DLM
+
+    Client->>NetMgmt: 1. 发送 IP 包 (例如 ping 8.8.8.8)
+    NetMgmt->>CM: 2. 捕获到未知来源的IP包，上报给CM
+    [cite_start]CM->>CM: 3. 识别流量：<br/>- 根据源IP匹配静态客户端配置文件 [cite: 194, 195]<br/>- 假设策略选择Gatelink
+    CM->>DLM: 4. 检查/打开 Gatelink 链路
+    [cite_start]CM->>NetMgmt: 5. 指令: 为此客户端IP<br/>添加路由和防火墙规则 [cite: 286]
+    NetMgmt-->>CM: 6. 确认规则已应用
+    [cite_start]Note over Client, NetMgmt: 7. 后续IP包被自动路由到Gatelink。<br>此过程对客户端完全透明 [cite: 139]。
+```
+
+#### **4. 基于 freeDiameter 的第一阶段开发计划**
+
+**步骤 1: 环境搭建与 freeDiameter 准备**
+
+  * 在 MAGIC 服务器上安装 Linux 操作系统、GCC/CMake、以及 freeDiameter 源代码。
+  * 编译并成功运行一个基础的 freeDiameter 实例，确保其可以处理标准的 Diameter 消息。
+
+**步骤 2: 定义 MAGIC Diameter 字典**
+
+  * 根据 ARINC 839 附件1 和 第 4.1.4 节，创建一个新的 Diameter 字典文件。
+  * [cite\_start]在该文件中定义 MAGIC 的 Vendor ID (13712) [cite: 70]。
+  * [cite\_start]定义所有 MAGIC 特定的 AVP (属性值对)，例如 `MAGIC-Status-Code`、`Client-Credentials` 等 [cite: 591]。
+  * [cite\_start]定义所有 MAGIC 特定的命令，例如 `MAGIC-Client-Authentication-Request` (Code: 100000) [cite: 448]。
+
+**步骤 3: 开发 freeDiameter 扩展模块 (`magic_app.fdx`)**
+
+  * 使用 freeDiameter 的框架创建一个新的扩展模块。
+  * 在该模块中，注册回调函数来处理所有 MAGIC 命令的请求 (MCAR, MCCR 等)。
+  * **初期实现**: 当收到 MCAR 请求时，模块仅解析 AVP 并打印日志，然后返回一个硬编码的成功 MCAA 响应。这一步用于验证字典和模块加载是否正确。
+
+**步骤 4: 开发中央管理 (CM) 及配置文件模块**
+
+  * 使用 C++ 或 Python 开发一个独立的 CM 模块。
+  * [cite\_start]创建数据结构来表示客户端、数据链和中心策略配置文件 [cite: 185]。
+  * 编写一个解析器（例如，使用 `libxml2` 或 `json-c`）来从磁盘加载这些配置文件。
+  * 实现一个简单的决策引擎。例如：`choose_link(client_request)` 函数，它根据策略返回最佳链路的名称。
+
+**步骤 5: 集成 CIC 与 CM**
+
+  * 在 freeDiameter 扩展模块中，当收到请求时，不再返回硬编码响应。
+  * 改为通过进程间通信（IPC，如 UNIX Domain Socket）将请求的关键参数（如用户名、请求的QoS）发送给 CM 模块。
+  * CM 模块接收请求，运行决策引擎，然后将结果（如授权结果、分配的链路）返回给扩展模块。
+  * 扩展模块根据 CM 的返回结果，构造并发送真实的 Diameter 响应 (MCAA, MCCA)。
+
+**步骤 6: 开发 DLM 和网络管理模块**
+
+  * **DLM Stubs**: 开发两个简单的 TCP 服务器作为 Satcom 和 Gatelink 的模拟器。它们监听特定端口，等待来自 CM 的 "OPEN" 或 "CLOSE" 等文本命令。
+  * **网络管理模块**: 开发一个库，其中包含执行 `ip route add ...` 和 `iptables -I FORWARD ...` 等系统命令的函数。CM 将调用这些函数来动态修改网络配置。
+
+**步骤 7: 端到端测试**
+
+  * 开发一个简单的 MAGIC-aware 客户端模拟器，它能够使用 Diameter 协议库发送 MCAR 请求并接收 MCAA 响应。
+  * **测试场景 1 (Aware)**: 运行客户端模拟器，发送认证请求。观察 MAGIC 服务器日志，确认 CM 做出了正确的链路选择，DLM 模拟器收到了指令，并且服务器上的路由表和防火墙规则被正确修改。
+  * **测试场景 2 (Non-Aware)**: 在 EFB 模拟器上，直接 `ping` 一个外部地址。观察 MAGIC 服务器日志，确认流量被正确识别并根据静态配置文件进行了路由。
+
+完成以上步骤，您将拥有一个符合 ARINC 839 核心要求、功能可验证的 MAGIC 系统 MVP。
