@@ -1,0 +1,11 @@
+help
+status
+show_config
+list_peers
+register_client demo_user password123 test_client 2
+login demo_user password123
+status
+list_sessions
+send_dwr
+logout
+quit

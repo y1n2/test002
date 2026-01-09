@@ -1,0 +1,9 @@
+status
+show_config
+register_client test_client password123
+login test_client password123
+status
+list_sessions
+logout
+status
+quit

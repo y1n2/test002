@@ -1,0 +1,578 @@
+===============================================================================
+                    freeDiameter 链路模拟器系统使用说明文档
+===============================================================================
+
+版本: 1.0
+日期: 2025-10-04
+作者: freeDiameter开发团队
+
+===============================================================================
+目录
+===============================================================================
+1. 系统概述
+2. 系统架构
+3. 安装与配置
+4. 启动系统
+5. 基本使用方法
+6. 高级功能
+7. 测试方法
+8. 故障排除
+9. 常见问题解答
+10. 技术支持
+
+===============================================================================
+1. 系统概述
+===============================================================================
+
+freeDiameter链路模拟器是一个用于模拟不同网络链路类型的系统，支持以太网、WiFi、
+蜂窝网络和卫星链路的仿真。系统主要包含以下组件：
+
+- freeDiameter服务端：处理Diameter协议消息
+- Diameter客户端：发送和接收Diameter消息
+- 链路模拟器：模拟不同网络环境和链路特性
+- 智能路由模块：根据网络状况选择最优链路
+
+主要功能：
+✓ 多链路类型支持（以太网、WiFi、蜂窝、卫星）
+✓ 网络延迟和丢包模拟
+✓ 消息格式显示（十六进制和字符串）
+✓ 实时链路状态监控
+✓ 智能路由选择
+✓ Diameter协议支持
+
+===============================================================================
+2. 系统架构
+===============================================================================
+
+系统采用模块化设计，主要组件如下：
+
+┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
+│  Diameter客户端  │◄──►│   链路模拟器     │◄──►│ freeDiameter服务端│
+│                 │    │                 │    │                 │
+│ - 消息发送      │    │ - 以太网 :8001  │    │ - 消息处理      │
+│ - 消息接收      │    │ - WiFi   :8002  │    │ - 路由决策      │
+│ - 用户交互      │    │ - 蜂窝   :8003  │    │ - 响应生成      │
+│                 │    │ - 卫星   :8004  │    │                 │
+└─────────────────┘    └─────────────────┘    └─────────────────┘
+
+数据流向：
+客户端 → 链路模拟器 → 服务端 → 链路模拟器 → 客户端
+
+===============================================================================
+3. 安装与配置
+===============================================================================
+
+3.1 系统要求
+- 操作系统：Linux (Ubuntu 18.04+推荐)
+- 编译器：GCC 7.0+
+- 依赖库：CMake, libsctp-dev, gnutls-dev
+
+3.2 编译安装
+cd /home/zhuwuhui/freeDiameter
+make clean
+make
+
+3.3 配置文件详细说明
+
+3.3.1 freeDiameter服务端配置
+主配置文件：/usr/local/etc/freeDiameter/server_test.conf
+备份文件：/usr/local/etc/freeDiameter/server_test.conf.backup
+
+配置文件包含：
+- 服务器身份配置 (Identity, Realm)
+- 监听端口配置 (ListenOn)
+- 证书配置 (TLS_Cred)
+- 路由配置 (ConnectPeer)
+- 扩展模块配置 (LoadExtension)
+
+示例配置：
+Identity = "server.example.com";
+Realm = "example.com";
+ListenOn = "0.0.0.0";
+Port = 3868;
+SecPort = 5868;
+
+3.3.2 客户端配置
+配置文件位置：diameter_client/目录下
+- 主配置文件：minimal_test.conf
+- 客户端证书：ca.crt
+- 连接配置：在配置文件中定义
+- 默认连接：localhost:3868
+
+3.3.3 链路模拟器配置
+配置文件：link_simulator/源码中定义
+端口配置：
+- 以太网：8001
+- WiFi：8002  
+- 蜂窝：8003
+- 卫星：8004
+
+3.3.4 证书配置
+证书文件位置：
+- CA证书：diameter_client/ca.crt
+- 服务端证书：/usr/local/etc/freeDiameter/certs/
+- 私钥文件：/usr/local/etc/freeDiameter/private/
+
+===============================================================================
+4. 系统启动详细步骤
+===============================================================================
+
+4.1 环境准备
+在启动系统前，请确保：
+1) 系统已正确编译
+2) 配置文件已正确设置
+3) 必要的端口未被占用
+4) 具有相应的系统权限
+
+检查端口占用：
+netstat -tlnp | grep -E ":(3868|800[1-4])"
+
+4.2 启动方法一：手动启动（推荐用于调试）
+
+步骤1：启动freeDiameter服务端
+# 方法1：使用系统服务（如果已安装）
+sudo systemctl start freediameter
+
+# 方法2：直接启动（推荐用于开发调试）
+sudo /usr/local/bin/freeDiameterd -c /usr/local/etc/freeDiameter/server_test.conf
+
+# 方法3：前台启动（查看详细日志）
+sudo /usr/local/bin/freeDiameterd -f -c /usr/local/etc/freeDiameter/server_test.conf
+
+步骤2：启动链路模拟器
+cd /home/zhuwuhui/freeDiameter/link_simulator
+./link_simulator
+
+步骤3：启动Diameter客户端
+cd /home/zhuwuhui/freeDiameter/diameter_client  
+./diameter_client
+
+4.3 启动方法二：脚本启动
+使用提供的启动脚本：
+./demo_test.sh
+
+4.4 启动方法三：后台启动
+# 后台启动所有组件
+sudo /usr/local/bin/freeDiameterd -c /usr/local/etc/freeDiameter/server_test.conf &
+cd link_simulator && ./link_simulator &
+cd diameter_client && ./diameter_client &
+
+4.5 验证启动状态详细检查
+
+4.5.1 检查freeDiameter服务端
+- 进程检查：ps aux | grep freeDiameterd
+- 端口检查：netstat -tlnp | grep :3868
+- 日志检查：tail -f /var/log/freeDiameter.log
+- 状态检查：sudo systemctl status freediameter (如果使用systemd)
+
+4.5.2 检查链路模拟器
+- 进程检查：ps aux | grep link_simulator
+- 端口检查：netstat -tlnp | grep -E ":(800[1-4])"
+- 功能测试：echo "test" | nc localhost 8001
+
+4.5.3 检查Diameter客户端
+- 进程检查：ps aux | grep diameter_client
+- 连接测试：在客户端输入 "help" 命令
+- 连接状态：客户端应显示 "Connected to server"
+
+4.6 启动故障排除
+
+4.6.1 freeDiameter服务端启动失败
+常见原因：
+- 配置文件路径错误
+- 证书文件缺失或权限问题
+- 端口被占用
+- 权限不足
+
+解决方法：
+# 检查配置文件
+sudo /usr/local/bin/freeDiameterd -c /usr/local/etc/freeDiameter/freeDiameter.conf --check
+
+# 检查证书
+ls -la /usr/local/etc/freeDiameter/certs/
+
+# 检查端口
+sudo lsof -i :3868
+
+4.6.2 链路模拟器启动失败
+常见原因：
+- 编译问题
+- 端口被占用
+- 权限问题
+
+解决方法：
+# 重新编译
+cd /home/zhuwuhui/freeDiameter
+make clean
+make
+
+# 检查端口
+for port in 8001 8002 8003 8004; do
+    sudo lsof -i :$port
+done
+
+4.6.3 客户端连接失败
+常见原因：
+- 服务端未启动
+- 网络连接问题
+- 证书问题
+
+解决方法：
+# 测试网络连接
+telnet localhost 3868
+
+# 检查证书
+openssl x509 -in diameter_client/ca.crt -text -noout
+- 链路模拟器：检查端口8001-8004是否正常监听
+- 客户端：检查是否成功连接到服务端
+
+===============================================================================
+5. 基本使用方法
+===============================================================================
+
+5.1 命令行测试
+使用netcat工具发送测试消息：
+
+# 发送到以太网链路 (端口8001)
+echo "hello" | nc localhost 8001
+
+# 发送到WiFi链路 (端口8002)
+echo "test message" | nc localhost 8002
+
+# 发送到蜂窝链路 (端口8003)
+echo "cellular test" | nc localhost 8003
+
+# 发送到卫星链路 (端口8004)
+echo "satellite test" | nc localhost 8004
+
+5.2 客户端命令
+在客户端界面中可以使用以下命令：
+
+- connect-all：连接所有链路
+- send-madr：发送MADR消息
+- send-link-resource：发送链路资源消息
+- select-link：选择特定链路
+- update-environment：更新环境参数
+- help：显示帮助信息
+- quit：退出客户端
+
+5.3 消息格式
+系统支持以下消息格式显示：
+- 十六进制格式：显示原始字节数据
+- 字符串格式：显示可读文本内容
+- 时间戳：显示消息接收时间
+- 链路信息：显示链路类型和状态
+
+===============================================================================
+6. 高级功能
+===============================================================================
+
+6.1 链路参数配置
+每种链路类型都有独特的参数：
+
+以太网链路：
+- 带宽：1000.0 Mbps
+- 延迟：1.0 ms
+- 丢包率：0.10%
+- 可靠性：99%
+
+WiFi链路：
+- 带宽：100.0 Mbps
+- 延迟：5.0 ms
+- 丢包率：1.00%
+- 可靠性：95%
+
+蜂窝链路：
+- 带宽：50.0 Mbps
+- 延迟：20.0 ms
+- 丢包率：2.00%
+- 可靠性：90%
+
+卫星链路：
+- 带宽：10.0 Mbps
+- 延迟：500.0 ms
+- 丢包率：5.00%
+- 可靠性：85%
+
+6.2 智能路由
+系统根据以下因素自动选择最优链路：
+- 网络延迟
+- 带宽利用率
+- 丢包率
+- 链路可靠性
+- 消息优先级
+
+6.3 环境模拟
+支持动态环境参数调整：
+- 天气条件影响
+- 网络拥塞模拟
+- 设备移动性
+- 信号强度变化
+
+===============================================================================
+7. 测试方法
+===============================================================================
+
+7.1 基础连接测试
+# 测试各链路连通性
+for port in 8001 8002 8003 8004; do
+    echo "Testing port $port"
+    echo "test" | nc localhost $port
+done
+
+7.2 消息格式测试
+# 测试中文字符
+echo "您好，这是测试消息" | nc localhost 8001
+
+# 测试特殊字符
+echo -e "Special\tChars\nTest" | nc localhost 8001
+
+# 测试二进制数据
+echo -ne "\x48\x65\x6c\x6c\x6f\x00\x01\x02" | nc localhost 8001
+
+7.3 性能测试
+# 批量消息测试
+for i in {1..100}; do
+    echo "Message $i" | nc localhost 8001
+done
+
+7.4 程序化测试
+使用提供的测试程序：
+./test_string_display
+./test_link_connection
+
+===============================================================================
+8. 故障排除
+===============================================================================
+
+8.1 常见问题
+
+问题：端口被占用
+解决：检查并终止占用端口的进程
+netstat -tlnp | grep :8001
+kill -9 <PID>
+
+问题：连接被拒绝
+解决：确认链路模拟器正在运行
+ps aux | grep link_simulator
+
+问题：消息未显示
+解决：检查链路模拟器日志输出
+
+问题：编译失败
+解决：检查依赖库是否安装完整
+sudo apt-get install build-essential cmake libsctp-dev libgnutls28-dev
+
+8.2 日志分析
+- 链路模拟器日志：实时显示在终端
+- 服务端日志：/var/log/freeDiameter.log
+- 客户端日志：终端输出
+
+8.3 调试模式
+启动时添加调试参数：
+./link_simulator --debug
+./diameter_client --verbose
+
+===============================================================================
+9. 常见问题解答
+===============================================================================
+
+Q: 如何更改链路参数？
+A: 修改link_simulator源码中的链路配置参数，重新编译。
+
+Q: 支持哪些消息类型？
+A: 支持标准Diameter消息和自定义应用消息。
+
+Q: 如何添加新的链路类型？
+A: 在link_simulator.c中添加新的链路定义和处理逻辑。
+
+Q: 系统支持多少并发连接？
+A: 理论上支持数千个并发连接，实际取决于系统资源。
+
+Q: 如何备份配置？
+A: 复制配置文件到安全位置：
+   cp /usr/local/etc/freeDiameter/server_test.conf backup/
+
+===============================================================================
+10. 技术支持
+===============================================================================
+
+10.1 文档资源
+- 系统设计文档：docs/
+- API参考：include/freeDiameter/
+- 示例代码：contrib/
+
+10.2 开发团队联系方式
+- 项目主页：https://github.com/freeDiameter/freeDiameter
+- 技术支持：support@freediameter.org
+- 问题报告：https://github.com/freeDiameter/freeDiameter/issues
+
+10.3 版本更新
+定期检查更新：
+git pull origin master
+make clean && make
+
+===============================================================================
+附录A：配置文件管理
+===============================================================================
+
+A.1 配置文件位置总览
+系统配置文件分布：
+
+freeDiameter服务端：
+├── /usr/local/etc/freeDiameter/server_test.conf (主配置)
+├── /usr/local/etc/freeDiameter/server_test.conf.backup (备份)
+├── /usr/local/etc/freeDiameter/certs/ (证书目录)
+└── /usr/local/etc/freeDiameter/private/ (私钥目录)
+
+客户端：
+├── /home/zhuwuhui/freeDiameter/diameter_client/ca.crt (CA证书)
+├── /home/zhuwuhui/freeDiameter/diameter_client/cli.c (客户端源码配置)
+└── /home/zhuwuhui/freeDiameter/diameter_client/main.c (主程序配置)
+
+链路模拟器：
+├── /home/zhuwuhui/freeDiameter/link_simulator/ (源码目录)
+└── 配置参数在源码中硬编码
+
+A.2 配置文件备份与恢复
+# 备份当前配置
+sudo cp /usr/local/etc/freeDiameter/server_test.conf \
+       /usr/local/etc/freeDiameter/server_test.conf.$(date +%Y%m%d_%H%M%S)
+
+# 恢复备份配置
+sudo cp /usr/local/etc/freeDiameter/server_test.conf.backup \
+       /usr/local/etc/freeDiameter/server_test.conf
+
+A.3 配置文件权限设置
+# 设置正确的文件权限
+sudo chown root:root /usr/local/etc/freeDiameter/server_test.conf
+sudo chmod 644 /usr/local/etc/freeDiameter/server_test.conf
+
+# 设置证书目录权限
+sudo chown -R root:root /usr/local/etc/freeDiameter/certs/
+sudo chmod 755 /usr/local/etc/freeDiameter/certs/
+sudo chmod 644 /usr/local/etc/freeDiameter/certs/*
+
+A.4 配置验证命令
+# 验证freeDiameter配置
+sudo /usr/local/bin/freeDiameterd -c /usr/local/etc/freeDiameter/server_test.conf --check
+
+# 验证证书
+openssl x509 -in /usr/local/etc/freeDiameter/certs/server.crt -text -noout
+
+===============================================================================
+附录B：快速参考命令
+===============================================================================
+
+B.1 系统启动命令
+# 完整启动序列
+sudo /usr/local/bin/freeDiameterd -c /usr/local/etc/freeDiameter/server_test.conf &
+cd /home/zhuwuhui/freeDiameter/link_simulator && ./link_simulator &
+cd /home/zhuwuhui/freeDiameter/diameter_client && ./diameter_client &
+
+# 使用脚本启动
+cd /home/zhuwuhui/freeDiameter
+./demo_test.sh
+
+B.2 系统状态检查
+# 检查所有进程
+ps aux | grep -E "(freeDiameterd|link_simulator|diameter_client)"
+
+# 检查所有端口
+netstat -tlnp | grep -E ":(3868|800[1-4])"
+
+# 检查系统服务状态
+sudo systemctl status freediameter
+
+B.3 测试命令
+# 基础连接测试
+echo "test" | nc localhost 8001
+echo "test" | nc localhost 8002
+echo "test" | nc localhost 8003
+echo "test" | nc localhost 8004
+
+# 中文字符测试
+echo "您好，这是测试消息" | nc localhost 8001
+
+# 二进制数据测试
+echo -ne "\x48\x65\x6c\x6c\x6f\x00\x01\x02" | nc localhost 8001
+
+# 程序化测试
+./test_string_display
+./test_link_connection
+
+B.4 系统停止命令
+# 优雅停止
+pkill -TERM freeDiameterd
+pkill -TERM link_simulator
+pkill -TERM diameter_client
+
+# 强制停止
+pkill -KILL freeDiameterd
+pkill -KILL link_simulator
+pkill -KILL diameter_client
+
+# 停止系统服务
+sudo systemctl stop freediameter
+
+B.5 日志查看命令
+# 查看freeDiameter日志
+tail -f /var/log/freeDiameter.log
+journalctl -u freediameter -f
+
+# 查看系统日志
+dmesg | grep -i diameter
+tail -f /var/log/syslog | grep diameter
+
+B.6 故障排除命令
+# 检查端口占用
+sudo lsof -i :3868
+sudo lsof -i :8001
+sudo lsof -i :8002
+sudo lsof -i :8003
+sudo lsof -i :8004
+
+# 检查网络连接
+telnet localhost 3868
+telnet localhost 8001
+
+# 检查配置文件
+sudo /usr/local/bin/freeDiameterd --check
+cat /usr/local/etc/freeDiameter/server_test.conf
+
+# 重新编译系统
+cd /home/zhuwuhui/freeDiameter
+make clean
+make
+
+===============================================================================
+附录C：环境变量和路径
+===============================================================================
+
+C.1 重要路径
+项目根目录：/home/zhuwuhui/freeDiameter/
+可执行文件：/usr/local/bin/freeDiameterd
+配置目录：/usr/local/etc/freeDiameter/
+日志文件：/var/log/freeDiameter.log
+库文件：/usr/local/lib/
+
+C.2 环境变量
+export FREEDIAMETER_HOME=/home/zhuwuhui/freeDiameter
+export FREEDIAMETER_CONF=/usr/local/etc/freeDiameter/server_test.conf
+export LD_LIBRARY_PATH=/usr/local/lib:$LD_LIBRARY_PATH
+
+C.3 用户权限要求
+- freeDiameter服务端：需要root权限（监听特权端口）
+- 链路模拟器：普通用户权限
+- 客户端：普通用户权限
+- 配置文件修改：需要root权限
+
+===============================================================================
+文档结束
+===============================================================================
+
+版本历史：
+v1.0 - 2025-10-04 - 初始版本，包含基本功能说明
+v1.1 - 2025-10-04 - 添加详细的启动步骤和配置文件说明
+
+如有问题或建议，请联系开发团队。
