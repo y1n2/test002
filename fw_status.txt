@@ -1,0 +1,89 @@
+=== ip rule list ===
+0:	from all lookup local
+5000:	from 192.168.126.5 lookup 99
+32766:	from all lookup main
+32767:	from all lookup default
+
+=== ip route show table all (first 200 lines) ===
+blackhole default table 99 
+default dev ens37 table 100 scope link 
+default via 192.168.42.2 dev ens40 proto dhcp src 192.168.42.128 metric 104 
+10.1.1.0/24 dev ens33 proto kernel scope link src 10.1.1.1 metric 100 
+10.2.2.0/24 dev ens37 proto kernel scope link src 10.2.2.2 
+10.2.2.0/24 dev ens37 proto kernel scope link src 10.2.2.2 metric 101 
+10.3.3.0/24 dev ens38 proto kernel scope link src 10.3.3.3 metric 102 
+192.168.42.0/24 dev ens40 proto kernel scope link src 192.168.42.128 metric 104 
+192.168.126.0/24 dev ens39 proto kernel scope link src 192.168.126.1 metric 103 
+local 10.1.1.1 dev ens33 table local proto kernel scope host src 10.1.1.1 
+broadcast 10.1.1.255 dev ens33 table local proto kernel scope link src 10.1.1.1 
+local 10.2.2.2 dev ens37 table local proto kernel scope host src 10.2.2.2 
+broadcast 10.2.2.255 dev ens37 table local proto kernel scope link src 10.2.2.2 
+local 10.3.3.3 dev ens38 table local proto kernel scope host src 10.3.3.3 
+broadcast 10.3.3.255 dev ens38 table local proto kernel scope link src 10.3.3.3 
+local 127.0.0.0/8 dev lo table local proto kernel scope host src 127.0.0.1 
+local 127.0.0.1 dev lo table local proto kernel scope host src 127.0.0.1 
+broadcast 127.255.255.255 dev lo table local proto kernel scope link src 127.0.0.1 
+local 192.168.42.128 dev ens40 table local proto kernel scope host src 192.168.42.128 
+broadcast 192.168.42.255 dev ens40 table local proto kernel scope link src 192.168.42.128 
+local 192.168.126.1 dev ens39 table local proto kernel scope host src 192.168.126.1 
+broadcast 192.168.126.255 dev ens39 table local proto kernel scope link src 192.168.126.1 
+fe80::/64 dev ens33 proto kernel metric 1024 pref medium
+fe80::/64 dev ens37 proto kernel metric 1024 pref medium
+fe80::/64 dev ens38 proto kernel metric 1024 pref medium
+fe80::/64 dev ens39 proto kernel metric 1024 pref medium
+fe80::/64 dev ens40 proto kernel metric 1024 pref medium
+local ::1 dev lo table local proto kernel metric 0 pref medium
+local fe80::1c64:246a:278f:1d51 dev ens39 table local proto kernel metric 0 pref medium
+local fe80::4729:db8e:451:ccf3 dev ens38 table local proto kernel metric 0 pref medium
+local fe80::64ab:d14e:79c7:1532 dev ens33 table local proto kernel metric 0 pref medium
+local fe80::96db:1caa:39fc:2820 dev ens37 table local proto kernel metric 0 pref medium
+local fe80::f839:3986:3add:27cb dev ens40 table local proto kernel metric 0 pref medium
+multicast ff00::/8 dev ens33 table local proto kernel metric 256 pref medium
+multicast ff00::/8 dev ens37 table local proto kernel metric 256 pref medium
+multicast ff00::/8 dev ens38 table local proto kernel metric 256 pref medium
+multicast ff00::/8 dev ens39 table local proto kernel metric 256 pref medium
+multicast ff00::/8 dev ens40 table local proto kernel metric 256 pref medium
+
+=== iptables: filter (full -S) ===
+-P INPUT ACCEPT
+-P FORWARD ACCEPT
+-P OUTPUT ACCEPT
+-A OUTPUT -s 192.168.126.5/32 -d 10.2.2.2/32 -j ACCEPT
+-A OUTPUT -s 192.168.126.1/32 -j ACCEPT
+-A OUTPUT -s 192.168.126.0/24 -j DROP
+
+=== iptables: mangle (full -S) ===
+-P PREROUTING ACCEPT
+-P INPUT ACCEPT
+-P FORWARD ACCEPT
+-P OUTPUT ACCEPT
+-P POSTROUTING ACCEPT
+
+=== iptables: nat (full -S) ===
+-P PREROUTING ACCEPT
+-P INPUT ACCEPT
+-P OUTPUT ACCEPT
+-P POSTROUTING ACCEPT
+
+=== iptables: raw (full -S) ===
+-P PREROUTING ACCEPT
+-P OUTPUT ACCEPT
+
+=== nft ruleset ===
+table ip filter {
+	chain OUTPUT {
+		type filter hook output priority filter; policy accept;
+		ip saddr 192.168.126.5 ip daddr 10.2.2.2 counter packets 0 bytes 0 accept
+		ip saddr 192.168.126.1 counter packets 230 bytes 28238 accept
+		ip saddr 192.168.126.0/24 counter packets 0 bytes 0 drop
+	}
+}
+table inet magic {
+	chain prerouting {
+		type filter hook prerouting priority mangle; policy accept;
+		ip saddr 192.168.126.5 ct mark set 0x00000103
+		ip daddr 192.168.126.5 ct mark set 0x00000103
+	}
+}
+
+=== conntrack (最后 50 条) ===

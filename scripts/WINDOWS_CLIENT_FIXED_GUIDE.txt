@@ -1,0 +1,47 @@
+freeDiameter Windows Client - Fixed Version Guide
+================================================
+
+PROBLEM SOLVED:
+- Fixed encoding issues in batch files
+- Created English-only scripts to avoid character encoding problems
+- Updated client configuration for proper WSL Ubuntu server connection
+
+NEW STARTUP SCRIPTS:
+1. windows_client_start.bat    - Full featured startup script (English only)
+2. windows_client_simple.bat   - Simplified startup script
+
+HOW TO START CLIENT (Choose one method):
+
+Method 1: Use the new fixed script
+----------------------------------
+In Windows Command Prompt:
+cd /d D:\freeDiameter\client\scripts
+windows_client_start.bat
+
+Method 2: Use the simple script
+-------------------------------
+In Windows Command Prompt:
+cd /d D:\freeDiameter\client\scripts
+windows_client_simple.bat
+
+Method 3: Direct command line
+-----------------------------
+In Windows Command Prompt:
+cd /d D:\freeDiameter\client\bin
+diameter_client.exe --conf "..\conf\client.conf"
+
+IMPORTANT NOTES:
+- WSL Ubuntu server must be running first (port 3868)
+- Client will connect to 127.0.0.1:3868 (WSL Ubuntu server)
+- All scripts are now in English to avoid encoding issues
+- Configuration file has been updated for proper connection
+
+TROUBLESHOOTING:
+- If you still see encoding issues, use Method 3 (direct command line)
+- Ensure WSL Ubuntu server is running before starting client
+- Check that port 3868 is listening (netstat -an | findstr ":3868")
+
+FILES UPDATED:
+- D:\freeDiameter\client\scripts\windows_client_start.bat (NEW)
+- D:\freeDiameter\client\scripts\windows_client_simple.bat (NEW)
+- D:\freeDiameter\client\conf\client.conf (UPDATED)

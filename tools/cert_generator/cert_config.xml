@@ -1,0 +1,444 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- 
+    ===========================================================================
+    MAGIC 系统证书与集成配置主文件 (v1.2.1)
+    ===========================================================================
+    本文件是 MAGIC 自动化部署工具的核心配置文件。
+    它定义了整个系统的 PKI 结构（CA、服务器、客户端）以及网络准入和业务策略。
+    
+    运行方式: python3 cert_generator.py cert_config.xml
+    ===========================================================================
+-->
+<CertificateConfig>
+    <!-- 
+        [全局配置]
+        OutputDirectory: 所有生成的产物（证书、私钥、.conf 配置文件）的存放路径。
+        支持相对路径或绝对路径。如果目录不存在，工具会自动创建。
+    -->
+    <OutputDirectory>./output</OutputDirectory>
+    
+    <!-- 
+        [CA 根证书配置]
+        CA (Certificate Authority) 是系统的信任根。所有服务器和客户端证书都由它签署。
+    -->
+    <CA>
+        <!-- CommonName (CN): CA 的唯一标识名称。建议包含组织名和用途。 -->
+        <CommonName>CES-MAGIC-Root-CA</CommonName>
+        
+        <!-- Organization (O): 组织名称，通常为航空公司或机构名。 -->
+        <Organization>China Eastern Airlines</Organization>
+        
+        <!-- OrganizationalUnit (OU): 部门名称，如安全部或机务部。 -->
+        <OrganizationalUnit>Aviation PKI</OrganizationalUnit>
+        
+        <!-- Country (C): 国家代码，必须是两位大写字母（如 CN, US）。 -->
+        <Country>CN</Country>
+        
+        <!-- State (ST): 州或省份名称。 -->
+        <State>Shanghai</State>
+        
+        <!-- Locality (L): 城市或地区名称。 -->
+        <Locality>Shanghai</Locality>
+        
+        <!-- ValidityDays: 证书有效期（天）。CA 证书建议设置较长（如 10年 = 3650天）。 -->
+        <ValidityDays>3650</ValidityDays>
+        
+        <!-- KeySize: RSA 密钥长度。建议 CA 使用 4096 位以保证长期安全性。 -->
+        <KeySize>4096</KeySize>
+        
+        <!-- OutputPrefix: 生成文件的前缀。如设为 ca，则生成 ca.crt 和 ca.key。 -->
+        <OutputPrefix>ca</OutputPrefix>
+    </CA>
+    
+    <!-- 
+        [服务器证书列表]
+        定义机载核心服务器的身份。通常每个系统只有一个主服务器。
+    -->
+    <Servers>
+        <Server>
+            <!-- CommonName (CN): 服务器的 FQDN（全限定域名）。必须与 freeDiameter 配置中的 Identity 一致。 -->
+            <CommonName>magic-server.example.com</CommonName>
+            
+            <Organization>China Eastern Airlines</Organization>
+            <OrganizationalUnit>Flight Operations</OrganizationalUnit>
+            <Country>CN</Country>
+            
+            <!-- ValidityDays: 服务器证书有效期。建议 1-3 年。 -->
+            <ValidityDays>1095</ValidityDays>
+            
+            <!-- KeySize: 服务器密钥长度。2048 位是目前的标准平衡点。 -->
+            <KeySize>2048</KeySize>
+            
+            <!-- OutputPrefix: 生成文件前缀。工具会据此生成 fd_server.conf。 -->
+            <OutputPrefix>magic-server</OutputPrefix>
+            
+            <!-- 
+                [主题别名 (Subject Alt Names - SAN)]
+                现代 TLS 验证强制要求使用 SAN。身份验证时会检查这些字段。
+            -->
+            <SubjectAltNames>
+                <!-- 
+                    OtherName: 用于存储非标准扩展。
+                    在 ARINC 842 中，用于存储 24位 Mode S 地址。
+                    OID: 1.3.6.1.4.1.13712.842.1.1 (ARINC 指定)
+                    Value: 飞机的 Mode S 十六进制地址。
+                -->
+                <OtherName>
+                    <OID>1.3.6.1.4.1.13712.842.1.1</OID>
+                    <Value>780ABC</Value>
+                </OtherName>
+                
+                <!-- DNS: 服务器允许使用的域名。可以设置多个。 -->
+                <DNS>magic-server.example.com</DNS>
+                <DNS>magic.server.example.com</DNS>
+                <DNS>localhost</DNS>
+                
+                <!-- IP: 服务器监听的 IP 地址。客户端连接时会校验此 IP 是否在证书内。 -->
+                <IP>127.0.0.1</IP>
+                <IP>192.168.126.1</IP> <!-- 服务器监听 IP -->
+                <IP>192.168.1.1</IP>
+            </SubjectAltNames>
+        </Server>
+    </Servers>
+    
+    <!-- 
+        [客户端证书配置]
+        定义所有允许接入的终端设备。
+        工具会自动完成以下集成：
+        1. 将 CommonName 写入 acl_wl.conf (网络准入)
+        2. 将 IP 写入 Client_Profile.xml (业务策略)
+        3. 为每个客户端生成专属的 fd_*.conf (一键部署)
+    -->
+    <Clients>
+        <!-- 示例：通用测试客户端 -->
+        <Client>
+            <!-- CommonName: 客户端唯一标识。必须与客户端 freeDiameter 配置的 Identity 匹配。 -->
+            <CommonName>magic-client.example.com</CommonName>
+            
+            <Organization>China Eastern Airlines</Organization>
+            <OrganizationalUnit>Flight Operations</OrganizationalUnit>
+            <Country>CN</Country>
+            
+            <!-- ValidityDays: 客户端证书有效期。建议 1 年。 -->
+            <ValidityDays>365</ValidityDays>
+            
+            <KeySize>2048</KeySize>
+            
+            <!-- OutputPrefix: 生成文件前缀。如 efb-01，则生成 efb-01.crt/key 和 fd_efb-01.conf。 -->
+            <OutputPrefix>magic-client</OutputPrefix>
+            
+            <SubjectAltNames>
+                <DNS>magic-client.example.com</DNS>
+                <DNS>magic-client-pc3.arinc839.local</DNS>
+                <DNS>localhost</DNS>
+                <IP>127.0.0.1</IP>
+                <IP>192.168.126.5</IP>
+            </SubjectAltNames>
+            
+            <!-- MAGIC 业务配置参数 -->
+            <MagicConfig>
+                <TailNumber>B-929A</TailNumber>
+                <AircraftType>C929</AircraftType>
+                <ProfileName>IP_DATA</ProfileName>
+                
+                <!-- 带宽配置 (单位: bps) -->
+                <RequestedBW>12000000</RequestedBW>
+                <RequestedReturnBW>3000000</RequestedReturnBW>
+                <RequiredBW>4000000</RequiredBW>
+                <RequiredReturnBW>1000000</RequiredReturnBW>
+                <MaxBW>20000000</MaxBW>
+                
+                <!-- QoS 配置 -->
+                <QoSLevel>2</QoSLevel>
+                <PriorityClass>6</PriorityClass>
+                <Priority>8</Priority>
+                <CostTolerance>2.0</CostTolerance>
+                
+                <!-- 认证信息 -->
+                <Username>magic-client</Username>
+                <ClientPassword>magic123</ClientPassword>
+                <ServerPassword>1111</ServerPassword>
+                
+                <!-- 客户端 Diameter 端口配置 -->
+                <Port>5890</Port>
+                <SecPort>0</SecPort>
+                <ListenOn>192.168.126.5</ListenOn>
+                
+                <!-- 服务器连接配置 -->
+                <ServerConnectTo>192.168.126.1</ServerConnectTo>
+                <ServerPort>5870</ServerPort>
+                
+                <!-- TFT 流量规则 -->
+                <TFTs>
+                    <TFT direction="GROUND">_iTFT=,1,10,192.168.126.5.255.255.255.255,10.2.2.8.255.255.255.255,17,5880.5880,8080.8080</TFT>
+                    <TFT direction="AIR">_iTFT=,2,10,10.2.2.8.255.255.255.255,192.168.126.5.255.255.255.255,17,8080.8080,5880.5880</TFT>
+                </TFTs>
+                
+                <!-- NAPT 映射 -->
+                <NAPTs>
+                    <NAPT>SNAT,192.168.126.5.255.255.255.255,0.0.0.0.0.0.0.0,6,80,0.65535,%LinkIp%,8080</NAPT>
+                    <NAPT>DNAT,0.0.0.0.0.0.0.0,192.168.126.5.255.255.255.255,6,8080,0.65535,192.168.126.5,80</NAPT>
+                </NAPTs>
+
+                <!-- 会话管理 -->
+                <Timeout>900</Timeout>
+                <KeepRequest>1</KeepRequest>
+                <AutoDetect>1</AutoDetect>
+                <AccountingEnabled>1</AccountingEnabled>
+            </MagicConfig>
+        </Client>
+        
+        <!-- 示例：EFB (电子飞行包) -->
+        <Client>
+            <CommonName>EFB-01.B-929A.CES</CommonName>
+            <Organization>China Eastern Airlines</Organization>
+            <OrganizationalUnit>Flight Operations</OrganizationalUnit>
+            <Country>CN</Country>
+            <ValidityDays>365</ValidityDays>
+            <KeySize>2048</KeySize>
+            <OutputPrefix>efb-01</OutputPrefix>
+            <SubjectAltNames>
+                <DNS>efb-01.c929.internal</DNS>
+                <DNS>EFB-01.B-929A.CES</DNS>
+                <IP>192.168.126.5</IP>
+            </SubjectAltNames>
+            
+            <!-- MAGIC 业务配置参数 (可选，不填则使用默认值) -->
+            <MagicConfig>
+                <TailNumber>B-929A</TailNumber>
+                <AircraftType>C929</AircraftType>
+                <ProfileName>IP_DATA</ProfileName>
+                
+                <!-- 带宽配置 (单位: bps) -->
+                <RequestedBW>12000000</RequestedBW>         <!-- 12 Mbps -->
+                <RequestedReturnBW>3000000</RequestedReturnBW>  <!-- 3 Mbps -->
+                <RequiredBW>4000000</RequiredBW>
+                <RequiredReturnBW>1000000</RequiredReturnBW>
+                <MaxBW>20000000</MaxBW>
+                
+                <!-- QoS 配置 -->
+                <QoSLevel>2</QoSLevel>                      <!-- 0=BestEffort 1=Silver 2=Gold 3=Platinum -->
+                <PriorityClass>6</PriorityClass>            <!-- 1-8, 数字越大优先级越高 -->
+                <Priority>8</Priority>                      <!-- 旧版字段 1-10 -->
+                <CostTolerance>2.0</CostTolerance>
+                
+                <!-- 认证信息 -->
+                <Username>EFB-01</Username>
+                <ClientPassword>magic123</ClientPassword>
+                <ServerPassword>1111</ServerPassword>
+                
+                <!-- 
+                    [客户端 Diameter 端口配置] (可选)
+                    Port: 客户端监听的普通 Diameter 端口（默认 0 = 动态分配）
+                    SecPort: 客户端监听的安全 Diameter 端口（默认 0 = 动态分配）
+                    
+                    注意：
+                    - 大多数客户端使用 0（动态端口）即可
+                    - 只有需要固定端口时才配置具体值
+                    - 确保端口不与其他服务冲突
+                -->
+                <Port>5890</Port>
+                <SecPort>0</SecPort>
+                <ListenOn>192.168.126.5</ListenOn>
+                
+                <!-- 
+                    [服务器连接配置] (可选)
+                    ServerConnectTo: 客户端连接到服务器的 IP 地址（默认使用服务器证书中的第一个 IP）
+                    ServerPort: 服务器监听的端口（默认 5870）
+                    
+                    示例：
+                    - 本地测试: 127.0.0.1
+                    - 局域网: 192.168.126.1
+                    - 远程: 10.1.1.1
+                -->
+                <ServerConnectTo>192.168.126.1</ServerConnectTo>
+                <ServerPort>5870</ServerPort>
+                
+                <!-- 
+                    [TFT 流量规则] (符合 3GPP TS 23.060 / ARINC 839 标准)
+                    TFT (Traffic Flow Template) 用于定义允许的业务流过滤规则。
+                    
+                    作用:
+                    1. 客户端配置 - 写入客户端的 fd_*.conf，用于发起 MCCR 请求
+                    2. 服务器白名单 - 写入 Client_Profile.xml，服务器验证 MCCR 中的 TFT 是否在允许列表中
+                    
+                    格式说明: _iTFT=[cid,[pf_id,precedence[,src_ip.mask[,dst_ip.mask[,proto[,dst_port[,src_port]]]]]]]
+                    - pf_id: 过滤器 ID (1-15)
+                    - precedence: 优先级 (0-255)，数字越小优先级越高
+                    - src_ip.mask: 源 IP 和掩码 (点分十进制，如 192.168.1.1.255.255.255.255)
+                    - dst_ip.mask: 目的 IP 和掩码
+                    - proto: 协议号 (6=TCP, 17=UDP)
+                    - dst_port: 目的端口范围 (如 80.80 或 2000.2099)
+                    - src_port: 源端口范围 (如 50000.50999 表示 50000-50999，0.65535 表示任意端口)
+                    
+                    注意:
+                    - 未配置 TFTs 时，工具会生成默认规则 (TCP 80，任意源端口)
+                    - 服务器会拒绝任何不在此列表中的 TFT 请求
+                    - 支持多 TFT (每个 MCCR 最多 255 条规则)
+                -->
+                <TFTs>
+                    <!-- 示例 1: 地→机 (GROUND) 访问地面服务器 10.2.2.8:5880，客户端使用端口 8081 -->
+                    <TFT direction="GROUND">_iTFT=,1,10,192.168.126.5.255.255.255.255,10.2.2.8.255.255.255.255,17,5880.5880,8081.8081</TFT>
+                    <!-- 示例 2: 机→地 (AIR) 回程流量，地面服务器访问客户端 -->
+                    <TFT direction="AIR">_iTFT=,2,10,10.2.2.8.255.255.255.255,192.168.126.5.255.255.255.255,17,8081.8081,5880.5880</TFT>
+                </TFTs>
+                
+                <!-- 
+                    [自定义 NAPT 映射] (符合 ARINC 839 标准格式)
+                    NAPT 用于在机载网关执行网络地址和端口转换。
+                    
+                    格式说明: <NAT-Type>,<Source-IP>,<Destination-IP>,<IP-Protocol>,<Destination-Port>,<Source-Port>,<to-IP>,<to-Port>
+                    - NAT-Type: SNAT (源转换) 或 DNAT (目的转换)
+                    - %LinkIp%: 动态占位符，运行时自动替换为真实的链路公网 IP
+                    - 端口范围: 使用点分隔 (如 2000.2099)
+                -->
+                <NAPTs>
+                    <!-- 示例 1: SNAT - 将内部 EFB 的 80 端口流量伪装成链路公网 IP 的 8080 端口发出 -->
+                    <NAPT>SNAT,192.168.126.5.255.255.255.255,0.0.0.0.0.0.0.0,6,80,0.65535,%LinkIp%,8080</NAPT>
+                    <!-- 示例 2: DNAT - 将发往链路公网 IP 8080 端口的流量转发到内部 EFB 的 80 端口 -->
+                    <NAPT>DNAT,0.0.0.0.0.0.0.0,192.168.126.5.255.255.255.255,6,8080,0.65535,192.168.126.5,80</NAPT>
+                </NAPTs>
+
+                <!-- 会话管理 -->
+                <Timeout>900</Timeout>                      <!-- 秒 -->
+                <KeepRequest>1</KeepRequest>
+                <AutoDetect>1</AutoDetect>
+                <AccountingEnabled>1</AccountingEnabled>
+            </MagicConfig>
+        </Client>
+        
+        <!-- 示例：IFE (乘客娱乐系统) -->
+        <Client>
+            <CommonName>ife-01.example.com</CommonName>
+            <Organization>China Eastern Airlines</Organization>
+            <OrganizationalUnit>Cabin Services</OrganizationalUnit>
+            <Country>CN</Country>
+            <ValidityDays>365</ValidityDays>
+            <KeySize>2048</KeySize>
+            <OutputPrefix>ife-01</OutputPrefix>
+            <SubjectAltNames>
+                <DNS>ife-01.example.com</DNS>
+                <IP>192.168.126.5</IP>
+            </SubjectAltNames>
+            
+            <!-- MAGIC 业务配置参数 -->
+            <MagicConfig>
+                <TailNumber>B-929A</TailNumber>
+                <AircraftType>C929</AircraftType>
+                <ProfileName>IP_DATA</ProfileName>
+                
+                <!-- 带宽配置 (单位: bps) -->
+                <RequestedBW>12000000</RequestedBW>
+                <RequestedReturnBW>3000000</RequestedReturnBW>
+                <RequiredBW>4000000</RequiredBW>
+                <RequiredReturnBW>1000000</RequiredReturnBW>
+                <MaxBW>20000000</MaxBW>
+                
+                <!-- QoS 配置 -->
+                <QoSLevel>2</QoSLevel>
+                <PriorityClass>6</PriorityClass>
+                <Priority>8</Priority>
+                <CostTolerance>2.0</CostTolerance>
+                
+                <!-- 认证信息 -->
+                <Username>ife-01</Username>
+                <ClientPassword>magic123</ClientPassword>
+                <ServerPassword>1111</ServerPassword>
+                
+                <!-- 客户端 Diameter 端口配置 -->
+                <Port>5892</Port>
+                <SecPort>0</SecPort>
+                <ListenOn>192.168.126.5</ListenOn>
+                
+                <!-- 服务器连接配置 -->
+                <ServerConnectTo>192.168.126.1</ServerConnectTo>
+                <ServerPort>5870</ServerPort>
+                
+                <!-- TFT 流量规则 -->
+                <TFTs>
+                    <TFT direction="GROUND">_iTFT=,1,10,192.168.126.5.255.255.255.255,10.2.2.8.255.255.255.255,17,5880.5880,8082.8082</TFT>
+                    <TFT direction="AIR">_iTFT=,2,10,10.2.2.8.255.255.255.255,192.168.126.5.255.255.255.255,17,8082.8082,5880.5880</TFT>
+                </TFTs>
+                
+                <!-- NAPT 映射 -->
+                <NAPTs>
+                    <NAPT>SNAT,192.168.126.5.255.255.255.255,0.0.0.0.0.0.0.0,6,80,0.65535,%LinkIp%,8080</NAPT>
+                    <NAPT>DNAT,0.0.0.0.0.0.0.0,192.168.126.5.255.255.255.255,6,8080,0.65535,192.168.126.5,80</NAPT>
+                </NAPTs>
+
+                <!-- 会话管理 -->
+                <Timeout>900</Timeout>
+                <KeepRequest>1</KeepRequest>
+                <AutoDetect>1</AutoDetect>
+                <AccountingEnabled>1</AccountingEnabled>
+            </MagicConfig>
+        </Client>
+
+        <!-- 示例：OMT (维护终端) -->
+        <Client>
+            <CommonName>omt-01.example.com</CommonName>
+            <Organization>China Eastern Airlines</Organization>
+            <OrganizationalUnit>Maintenance</OrganizationalUnit>
+            <Country>CN</Country>
+            <ValidityDays>365</ValidityDays>
+            <KeySize>2048</KeySize>
+            <OutputPrefix>omt-01</OutputPrefix>
+            <SubjectAltNames>
+                <DNS>omt-01.example.com</DNS>
+                <IP>192.168.126.5</IP>
+            </SubjectAltNames>
+            
+            <!-- MAGIC 业务配置参数 -->
+            <MagicConfig>
+                <TailNumber>B-929A</TailNumber>
+                <AircraftType>C929</AircraftType>
+                <ProfileName>IP_DATA</ProfileName>
+                
+                <!-- 带宽配置 (单位: bps) -->
+                <RequestedBW>12000000</RequestedBW>
+                <RequestedReturnBW>3000000</RequestedReturnBW>
+                <RequiredBW>4000000</RequiredBW>
+                <RequiredReturnBW>1000000</RequiredReturnBW>
+                <MaxBW>20000000</MaxBW>
+                
+                <!-- QoS 配置 -->
+                <QoSLevel>2</QoSLevel>
+                <PriorityClass>6</PriorityClass>
+                <Priority>8</Priority>
+                <CostTolerance>2.0</CostTolerance>
+                
+                <!-- 认证信息 -->
+                <Username>omt-01</Username>
+                <ClientPassword>magic123</ClientPassword>
+                <ServerPassword>1111</ServerPassword>
+                
+                <!-- 客户端 Diameter 端口配置 -->
+                <Port>5894</Port>
+                <SecPort>0</SecPort>
+                <ListenOn>192.168.126.5</ListenOn>
+                
+                <!-- 服务器连接配置 -->
+                <ServerConnectTo>192.168.126.1</ServerConnectTo>
+                <ServerPort>5870</ServerPort>
+                
+                <!-- TFT 流量规则 -->
+                <TFTs>
+                    <TFT direction="GROUND">_iTFT=,1,10,192.168.126.5.255.255.255.255,10.2.2.8.255.255.255.255,17,5880.5880,8083.8083</TFT>
+                    <TFT direction="AIR">_iTFT=,2,10,10.2.2.8.255.255.255.255,192.168.126.5.255.255.255.255,17,8083.8083,5880.5880</TFT>
+                </TFTs>
+                
+                <!-- NAPT 映射 -->
+                <NAPTs>
+                    <NAPT>SNAT,192.168.126.5.255.255.255.255,0.0.0.0.0.0.0.0,6,80,0.65535,%LinkIp%,8080</NAPT>
+                    <NAPT>DNAT,0.0.0.0.0.0.0.0,192.168.126.5.255.255.255.255,6,8080,0.65535,192.168.126.5,80</NAPT>
+                </NAPTs>
+
+                <!-- 会话管理 -->
+                <Timeout>900</Timeout>
+                <KeepRequest>1</KeepRequest>
+                <AutoDetect>1</AutoDetect>
+                <AccountingEnabled>1</AccountingEnabled>
+            </MagicConfig>
+        </Client>
+    </Clients>
+</CertificateConfig>

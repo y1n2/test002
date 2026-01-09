@@ -1,0 +1,212 @@
+==========================================
+freeDiameter Client - Visual Studio 2022 Build Guide
+==========================================
+
+OVERVIEW
+--------
+This guide provides step-by-step instructions for building freeDiameter client 
+using Visual Studio 2022. The new build scripts and configuration files have 
+been optimized specifically for VS2022.
+
+PREREQUISITES
+-------------
+1. Visual Studio 2022 (Community, Professional, or Enterprise)
+   - Must include "Desktop development with C++" workload
+   - Must include "CMake tools for Visual Studio" component
+
+2. CMake 3.16 or later
+   - Download from: https://cmake.org/download/
+   - Make sure CMake is added to system PATH
+
+QUICK START
+-----------
+1. Open Command Prompt or PowerShell as Administrator
+2. Navigate to: D:\freeDiameter_Windows_Source
+3. Run: build_vs2022.bat
+4. Wait for compilation to complete
+5. Find executable at: build\Release\diameter_client.exe
+
+DETAILED STEPS
+--------------
+
+Step 1: Verify Installation
+---------------------------
+Open Command Prompt and verify:
+> cmake --version
+> "C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Auxiliary\Build\vcvars64.bat"
+> cl
+
+If any command fails, reinstall the missing component.
+
+Step 2: Prepare Source Code
+---------------------------
+Ensure you have the complete source package at:
+D:\freeDiameter_Windows_Source\
+
+The directory should contain:
+- src/                  (Source code)
+- include/              (Header files)
+- config/               (Configuration files)
+- certs/                (Certificate files)
+- CMakeLists.txt        (VS2022 optimized)
+- build_vs2022.bat      (VS2022 build script)
+
+Step 3: Build Using Automated Script
+------------------------------------
+Method 1: Using build_vs2022.bat (Recommended)
+> cd D:\freeDiameter_Windows_Source
+> build_vs2022.bat
+
+The script will:
+- Detect Visual Studio 2022 installation
+- Set up build environment
+- Configure project with CMake
+- Compile the project
+- Copy configuration files
+
+Method 2: Manual Build Process
+------------------------------
+If the automated script fails, use manual steps:
+
+1. Open "Developer Command Prompt for VS 2022"
+2. Navigate to source directory:
+   > cd D:\freeDiameter_Windows_Source
+
+3. Create and enter build directory:
+   > mkdir build
+   > cd build
+
+4. Configure with CMake:
+   > cmake .. -G "Visual Studio 17 2022" -A x64 -DCMAKE_BUILD_TYPE=Release
+
+5. Build the project:
+   > cmake --build . --config Release
+
+6. Copy configuration files:
+   > copy ..\config\*.conf Release\
+   > copy ..\certs\*.* Release\
+
+VISUAL STUDIO 2022 SPECIFIC FEATURES
+------------------------------------
+The VS2022 configuration includes:
+- v143 toolset (latest)
+- Parallel compilation (/MP)
+- Optimized for x64 architecture
+- Enhanced debugging support
+- Modern C runtime libraries
+- Windows 10/11 compatibility
+
+BUILD OUTPUT
+------------
+After successful compilation:
+- Executable: build\Release\diameter_client.exe
+- Libraries: build\Release\*.lib
+- Config files: build\Release\*.conf
+- Certificates: build\Release\*.crt, *.key
+
+RUNNING THE CLIENT
+------------------
+1. Navigate to build directory:
+   > cd D:\freeDiameter_Windows_Source\build\Release
+
+2. Run with configuration:
+   > diameter_client.exe -c client.conf
+
+3. For testing:
+   > diameter_client.exe -c minimal_test.conf
+
+TROUBLESHOOTING
+---------------
+
+Problem: "Visual Studio 17 2022 could not be found"
+Solution: 
+- Ensure VS2022 is properly installed
+- Try running from "Developer Command Prompt for VS 2022"
+- Check VS2022 installation path
+
+Problem: "CMake configuration failed"
+Solution:
+- Update CMake to latest version
+- Clear build directory and retry
+- Check CMakeLists.txt syntax
+
+Problem: "Build failed with compilation errors"
+Solution:
+- Check error messages for missing dependencies
+- Ensure all source files are present
+- Try building in Debug mode first
+
+Problem: "Missing DLL errors when running"
+Solution:
+- Ensure Visual C++ Redistributable is installed
+- Copy required DLLs to executable directory
+- Use static linking option
+
+PERFORMANCE OPTIMIZATION
+------------------------
+For Release builds:
+- Compiler optimizations: /O2
+- Link-time optimization: /LTCG
+- Whole program optimization enabled
+- Debug information included for troubleshooting
+
+BUILD VARIANTS
+--------------
+Debug Build:
+> cmake .. -G "Visual Studio 17 2022" -A x64 -DCMAKE_BUILD_TYPE=Debug
+> cmake --build . --config Debug
+
+Release Build (Default):
+> cmake .. -G "Visual Studio 17 2022" -A x64 -DCMAKE_BUILD_TYPE=Release
+> cmake --build . --config Release
+
+ADVANCED CONFIGURATION
+----------------------
+Custom build options can be set via CMake variables:
+> cmake .. -G "Visual Studio 17 2022" -A x64 -DCUSTOM_OPTION=ON
+
+Available options:
+- CMAKE_BUILD_TYPE: Debug, Release, RelWithDebInfo
+- CMAKE_INSTALL_PREFIX: Installation directory
+- BUILD_SHARED_LIBS: Build shared libraries (OFF by default)
+
+INTEGRATION WITH VISUAL STUDIO IDE
+----------------------------------
+To open project in Visual Studio 2022:
+1. Generate project files:
+   > cmake .. -G "Visual Studio 17 2022" -A x64
+
+2. Open generated solution:
+   > start freeDiameterClient.sln
+
+3. Build from IDE:
+   - Select Release configuration
+   - Build -> Build Solution (Ctrl+Shift+B)
+
+VERIFICATION
+------------
+To verify successful build:
+1. Check executable exists: build\Release\diameter_client.exe
+2. Check file size: Should be > 100KB
+3. Test run: diameter_client.exe --help
+4. Check dependencies: Use Dependency Walker or similar tool
+
+NEXT STEPS
+----------
+After successful compilation:
+1. Configure client.conf for your environment
+2. Set up certificates if using TLS
+3. Test connectivity to Diameter server
+4. Deploy to target systems
+
+SUPPORT
+-------
+If you encounter issues:
+1. Check this guide thoroughly
+2. Review build logs for specific errors
+3. Ensure all prerequisites are met
+4. Try manual build process if automated script fails
+
+==========================================
+Build completed successfully with Visual Studio 2022!
+==========================================

@@ -1,0 +1,149 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- 
+    ============================================================================
+    ARINC 839 MAGIC 中心策略配置文件 (Central Policy Profile)
+    ============================================================================
+    版本: 2.0 (Enhanced)
+    描述: 定义全机流量的路由优先级、准入控制及链路切换逻辑。
+    作用域: 全局 (Global) - 指导 CM 模块进行路由决策。
+    ============================================================================
+-->
+<CentralPolicyProfile version="2.0">
+
+    <!-- 
+    ============================================================================
+    1. 流量分类定义 (Traffic Classification)
+    [核心逻辑]: 将 Client Profile 中的具体属性映射为抽象的 "Traffic Class"
+    ============================================================================
+    -->
+    <TrafficClassDefinitions>
+        <!-- 驾驶舱关键数据: 匹配 PriorityClass=1 的客户端 -->
+        <TrafficClass id="COCKPIT_DATA">
+            <MatchPriorityClass>1</MatchPriorityClass>
+        </TrafficClass>
+
+        <!-- 实时交互/语音: 匹配 QoS 包含 EF (Level 2) 的客户端 -->
+        <TrafficClass id="INTERACTIVE">
+            <MatchQoSLevel>2</MatchQoSLevel>
+        </TrafficClass>
+
+        <!-- 大容量数据: 匹配 ProfileName 包含 "maint" 或 "load" 的客户端 -->
+        <TrafficClass id="BULK_DATA">
+            <MatchProfileNamePattern>*maint*</MatchProfileNamePattern>
+            <MatchProfileNamePattern>*loader*</MatchProfileNamePattern>
+        </TrafficClass>
+
+        <!-- 默认流量: 匹配剩余所有 -->
+        <TrafficClass id="BEST_EFFORT">
+            <Default>true</Default>
+        </TrafficClass>
+    </TrafficClassDefinitions>
+
+
+    <!-- 
+    ============================================================================
+    2. 全局链路切换参数 (Global Switching Logic)
+    [核心逻辑]: 防止链路频繁抖动 (Flapping)
+    ============================================================================
+    -->
+    <SwitchingPolicy>
+        <!-- 驻留时间: 切换到新链路后，至少保持连接 60秒，除非链路彻底断开 -->
+        <MinDwellTime>60</MinDwellTime>
+        <!-- 信号迟滞: 新链路信号必须比当前链路强 10% 以上才切换 -->
+        <HysteresisPercentage>10</HysteresisPercentage>
+    </SwitchingPolicy>
+
+
+    <!-- 
+    ============================================================================
+    3. 飞行阶段策略集 (Policy Rule Sets)
+    ============================================================================
+    -->
+    
+    <!-- 场景 A: 地面作业 (停靠/滑行) -->
+    <!-- 策略目标: 尽可能使用免费链路，大数据只走 WiFi -->
+    <!-- v2.2: 使用 on_ground_only 属性标记仅地面可用的链路 (WiFi/Gatelink) -->
+    <PolicyRuleSet id="GROUND_OPS" flight_phases="PARKED, GATE, TAXI">
+        
+        <!-- 驾驶舱数据: 保证连通性，优先 Cellular (更稳)，WiFi 次之 -->
+        <PolicyRule traffic_class="COCKPIT_DATA">
+            <PathPreference ranking="1" link_id="LINK_CELLULAR" />
+            <!-- 要求: 即使连 WiFi，也必须建立 VPN 隧道 -->
+            <PathPreference ranking="2" link_id="LINK_WIFI" security_required="VPN" on_ground_only="true" />
+            <PathPreference ranking="3" link_id="LINK_SATCOM" />
+        </PolicyRule>
+        
+        <!-- 大数据下载: 强制只走 WiFi/Gatelink，禁止偷跑流量 -->
+        <!-- v2.2: WiFi 仅在地面可用 (on_ground_only=true) -->
+        <PolicyRule traffic_class="BULK_DATA">
+            <PathPreference ranking="1" link_id="LINK_WIFI" on_ground_only="true" />
+            <!-- Action=PROHIBIT: 即使 WiFi 断了，也不允许走蜂窝或卫星 -->
+            <PathPreference ranking="2" link_id="LINK_CELLULAR" action="PROHIBIT" />
+            <PathPreference ranking="3" link_id="LINK_SATCOM" action="PROHIBIT" />
+        </PolicyRule>
+        
+        <!-- 实时交互 (如 VoIP): 优先使用低延迟链路 -->
+        <PolicyRule traffic_class="INTERACTIVE">
+            <PathPreference ranking="1" link_id="LINK_WIFI" on_ground_only="true" />
+            <PathPreference ranking="2" link_id="LINK_CELLULAR" />
+            <PathPreference ranking="3" link_id="LINK_SATCOM" />
+        </PolicyRule>
+
+        <!-- 普通流量 -->
+        <PolicyRule traffic_class="BEST_EFFORT">
+            <PathPreference ranking="1" link_id="LINK_WIFI" on_ground_only="true" />
+            <PathPreference ranking="2" link_id="LINK_CELLULAR" />
+            <PathPreference ranking="3" link_id="LINK_SATCOM" />
+        </PolicyRule>
+    </PolicyRuleSet>
+
+
+    <!-- 场景 B: 低空/起降 (起飞/爬升/进近) -->
+    <!-- 策略目标: WiFi 已断，卫星可能有遮挡，优先使用 ATG/Cellular -->
+    <!-- v2.2: 低空场景中 SATCOM 仅空中可用 (airborne_only)，避免地面遮挡问题 -->
+    <PolicyRuleSet id="LOW_ALTITUDE_OPS" flight_phases="TAKEOFF, CLIMB, DESCENT, APPROACH, LANDING">
+        
+        <!-- 实时交互 (如 VoIP): 对延迟敏感 -->
+        <PolicyRule traffic_class="INTERACTIVE">
+            <!-- 增加硬性指标: 只有延迟小于 300ms 的链路才会被选中 -->
+            <PathPreference ranking="1" link_id="LINK_CELLULAR" max_latency_ms="300" />
+            <PathPreference ranking="2" link_id="LINK_SATCOM" airborne_only="true" />
+            <PathPreference ranking="3" link_id="LINK_WIFI" action="PROHIBIT" />
+        </PolicyRule>
+        
+        <!-- 默认规则 -->
+        <PolicyRule traffic_class="ALL_TRAFFIC">
+            <PathPreference ranking="1" link_id="LINK_CELLULAR" />
+            <PathPreference ranking="2" link_id="LINK_SATCOM" airborne_only="true" />
+            <PathPreference ranking="3" link_id="LINK_WIFI" action="PROHIBIT" />
+        </PolicyRule>
+    </PolicyRuleSet>
+
+
+    <!-- 场景 C: 高空巡航/越洋 (Cruise) -->
+    <!-- 策略目标: 此时通常只有卫星可用 (除非有 ATG) -->
+    <!-- v2.2: 巡航场景使用 airborne_only 确保 SATCOM 仅空中使用 -->
+    <PolicyRuleSet id="HIGH_ALTITUDE_OPS" flight_phases="CRUISE">
+        
+        <!-- 驾驶舱数据: 卫星首选 -->
+        <PolicyRule traffic_class="COCKPIT_DATA">
+            <PathPreference ranking="1" link_id="LINK_SATCOM" airborne_only="true" />
+            <!-- 如果有 ATG (LINK_CELLULAR)，作为备选 -->
+            <PathPreference ranking="2" link_id="LINK_CELLULAR" />
+        </PolicyRule>
+
+        <!-- 普通流量: 允许使用卫星，但可能会被限速 -->
+        <PolicyRule traffic_class="BEST_EFFORT">
+            <PathPreference ranking="1" link_id="LINK_SATCOM" airborne_only="true" />
+            <!-- 如果是越洋飞行，Cellular (ATG) 可能不可用，这里设置为允许但由 DLM 状态决定 -->
+            <PathPreference ranking="2" link_id="LINK_CELLULAR" /> 
+            <PathPreference ranking="3" link_id="LINK_WIFI" action="PROHIBIT" />
+        </PolicyRule>
+        <!-- 实时交互 (如 VoIP): 卫星首选，ATG 备选 -->
+        <PolicyRule traffic_class="INTERACTIVE">
+            <PathPreference ranking="1" link_id="LINK_SATCOM" airborne_only="true" />
+            <PathPreference ranking="2" link_id="LINK_CELLULAR" />
+        </PolicyRule>
+    </PolicyRuleSet>
+
+</CentralPolicyProfile>

@@ -1,0 +1,28 @@
+保守文件清理报告
+================
+清理时间: 2025-10-28 10:15:15
+清理目录: /home/zhuwuhui/freeDiameter
+清理策略: 只删除确定安全的临时文件和空目录
+
+删除的文件列表:
+空目录: /home/zhuwuhui/freeDiameter/build/CMakeFiles/CMakeTmp
+空目录: /home/zhuwuhui/freeDiameter/extensions/dict_arinc839/build/CMakeFiles/CMakeTmp
+空目录: /home/zhuwuhui/freeDiameter/build/CMakeFiles/3.16.3/CompilerIdC/tmp
+空目录: /home/zhuwuhui/freeDiameter/extensions/dict_arinc839/build/CMakeFiles/3.16.3/CompilerIdC/tmp
+未发现编辑器临时文件
+未发现系统临时文件
+
+清理摘要:
+========
+删除文件数量: 0
+删除目录数量: 0
+释放空间: 0 字节 (0 MB)
+
+注意事项:
+========
+- 本次清理采用极其保守的策略
+- 只删除了确定安全的临时文件和空目录
+- 所有重要的文档、测试脚本和源代码文件均已保留
+- 如需删除其他文件，请手动确认后操作
+
+清理完成时间: 2025-10-28 10:15:16

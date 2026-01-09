@@ -1,0 +1,75 @@
+# Makefile for MAGIC Core with XML Configuration Support
+
+CC = gcc
+CFLAGS = -Wall -Wextra -pthread -I. -Imagic_server $(shell pkg-config --cflags libxml-2.0)
+LDFLAGS = -pthread $(shell pkg-config --libs libxml-2.0)
+
+# 目标文件
+TARGETS = magic_core test_xml_parser test_policy_engine
+
+# 源文件
+MAGIC_CORE_SRCS = magic_server/magic_core_main.c \
+                  magic_server/xml_config_parser.c \
+                  magic_server/policy_engine.c \
+                  magic_server/cm_core_simple.c
+                  
+TEST_XML_SRCS = magic_server/test_xml_parser.c \
+                magic_server/xml_config_parser.c
+
+TEST_POLICY_SRCS = magic_server/test_policy_engine.c \
+                   magic_server/policy_engine.c \
+                   magic_server/xml_config_parser.c
+
+# 默认目标
+all: $(TARGETS)
+
+# 编译 magic_core (独立版本，不依赖 cm_core_simple.c)
+magic_core: magic_server/magic_core_main.c magic_server/xml_config_parser.c
+	@echo "Building magic_core with XML support..."
+	$(CC) $(CFLAGS) $^ $(LDFLAGS) -o $@
+	@echo "✓ Built magic_core"
+
+# 编译 XML 解析测试程序
+test_xml_parser: $(TEST_XML_SRCS)
+	@echo "Building XML parser test..."
+	$(CC) $(CFLAGS) $^ $(LDFLAGS) -o $@
+	@echo "✓ Built test_xml_parser"
+
+# 编译策略引擎测试程序
+test_policy_engine: $(TEST_POLICY_SRCS)
+	@echo "Building Policy Engine test..."
+	$(CC) $(CFLAGS) $^ $(LDFLAGS) -o $@
+	@echo "✓ Built test_policy_engine"
+
+# 清理
+clean:
+	rm -f $(TARGETS)
+	@echo "✓ Cleaned"
+
+# 测试 XML 解析
+test-xml: test_xml_parser
+	@echo ""
+	@echo "========================================="
+	@echo "  Running XML Parser Test"
+	@echo "========================================="
+	@./test_xml_parser
+	@echo ""
+
+# 测试策略引擎
+test-policy: test_policy_engine
+	@echo ""
+	@echo "========================================="
+	@echo "  Running Policy Engine Test"
+	@echo "========================================="
+	@./test_policy_engine
+	@echo ""
+
+# 运行所有测试
+test: test-xml test-policy
+
+# 检查 libxml2
+check-deps:
+	@echo "Checking libxml2..."
+	@pkg-config --exists libxml-2.0 && echo "✓ libxml2 found" || (echo "✗ libxml2 not found. Install: sudo apt-get install libxml2-dev" && exit 1)
+
+.PHONY: all clean test check-deps

@@ -1,0 +1,67 @@
+# freeDiameter Windows CMake 配置文件
+# 将此内容保存为 CMakeLists.txt 用于 Windows 编译
+
+cmake_minimum_required(VERSION 3.10)
+project(freeDiameter_Client)
+
+# 设置 C 标准
+set(CMAKE_C_STANDARD 99)
+set(CMAKE_C_STANDARD_REQUIRED ON)
+
+# Windows 特定设置
+if(WIN32)
+    add_definitions(-D_WIN32_WINNT=0x0601)  # Windows 7+
+    add_definitions(-DWIN32_LEAN_AND_MEAN)
+    add_definitions(-D_CRT_SECURE_NO_WARNINGS)
+endif()
+
+# 包含目录
+include_directories(
+    ${CMAKE_CURRENT_SOURCE_DIR}/include
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/client
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/libfdcore
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/libfdproto
+)
+
+# libfdproto 库
+file(GLOB LIBFDPROTO_SOURCES "src/libfdproto/*.c")
+add_library(fdproto STATIC ${LIBFDPROTO_SOURCES})
+
+# libfdcore 库
+file(GLOB LIBFDCORE_SOURCES "src/libfdcore/*.c")
+add_library(fdcore STATIC ${LIBFDCORE_SOURCES})
+target_link_libraries(fdcore fdproto)
+
+# 客户端可执行文件
+file(GLOB CLIENT_SOURCES "src/client/*.c")
+add_executable(diameter_client ${CLIENT_SOURCES})
+
+# 链接库
+if(WIN32)
+    target_link_libraries(diameter_client 
+        fdcore 
+        fdproto 
+        ws2_32 
+        wsock32 
+        iphlpapi
+    )
+else()
+    target_link_libraries(diameter_client 
+        fdcore 
+        fdproto 
+        pthread 
+        m
+    )
+endif()
+
+# 编译选项
+if(MSVC)
+    target_compile_options(diameter_client PRIVATE /W3)
+else()
+    target_compile_options(diameter_client PRIVATE -Wall -Wextra)
+endif()
+
+# 安装规则
+install(TARGETS diameter_client DESTINATION bin)
+install(DIRECTORY config/ DESTINATION etc)
+install(DIRECTORY certs/ DESTINATION certs)

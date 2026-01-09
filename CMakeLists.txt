@@ -1,128 +1,133 @@
-PROJECT("freeDiameter extensions" C)
+# This file is the source for generating the Makefile for the project, using cmake tool (cmake.org)
 
-# We want all resulting objects in the same folder
-SET(LIBRARY_OUTPUT_PATH ${CMAKE_CURRENT_BINARY_DIR})
+# CMake version
+CMAKE_MINIMUM_REQUIRED(VERSION 3.10)
 
-# Use the macro FD_ADD_EXTENSION(name files...) to create an extension
-# It is equivalent to add_library with the appropriate parameters
-# and naming conventions (.fdx : FreeDiameter eXtension)
-MACRO(FD_ADD_EXTENSION EXTNAME)
-  ADD_LIBRARY(${EXTNAME} MODULE ${ARGN})
-  SET_TARGET_PROPERTIES(${EXTNAME} PROPERTIES PREFIX "" )
-  SET_TARGET_PROPERTIES(${EXTNAME} PROPERTIES SUFFIX ".fdx" )
-  SET_TARGET_PROPERTIES(${EXTNAME} PROPERTIES C_VISIBILITY_PRESET hidden )
-  SET_TARGET_PROPERTIES(${EXTNAME} PROPERTIES CXX_VISIBILITY_PRESET hidden )
-  TARGET_LINK_LIBRARIES(${EXTNAME} libfdproto libfdcore)
-ENDMACRO(FD_ADD_EXTENSION)
+# Name of the project
+# Limit languages to C to avoid requiring a C++ compiler in constrained environments
+PROJECT("freeDiameter" C)
 
-# Use the macro FD_EXTENSION_SUBDIR(extmacroname subdir descr default) to
-# add a new extension subdirectory.
-MACRO(FD_EXTENSION_SUBDIR EXTSUBDIR EXTDESCR EXTDEFAULT)
-   STRING(TOUPPER ${EXTSUBDIR} EXTMACRONAME)
-   IF (NOT ALL_EXTENSIONS)
-     OPTION(BUILD_${EXTMACRONAME} "Build ${EXTSUBDIR}.fdx? (${EXTDESCR})" ${EXTDEFAULT})
-   ENDIF (NOT ALL_EXTENSIONS)
-   IF (BUILD_${EXTMACRONAME} OR ALL_EXTENSIONS)
-      SUBDIRS(${EXTSUBDIR})
-   ENDIF (BUILD_${EXTMACRONAME} OR ALL_EXTENSIONS)
-ENDMACRO(FD_EXTENSION_SUBDIR)
+# Information to display in daemon's help
+SET(FD_PROJECT_NAME freeDiameter CACHE STRING "Project name")
+SET(FD_PROJECT_BINARY freeDiameterd)
+SET(FD_PROJECT_COPYRIGHT "Copyright (c) 2008-2015, WIDE Project (www.wide.ad.jp) and NICT (www.nict.go.jp)")
+SET(FD_PROJECT_VENDOR_ID 0 CACHE STRING "Project vendor ID")
 
-OPTION(ALL_EXTENSIONS "Build ALL available extensions? (disable to select individual components)" OFF)
+# Version of the source code
+SET(FD_PROJECT_VERSION_MAJOR 1)
+SET(FD_PROJECT_VERSION_MINOR 6)
+SET(FD_PROJECT_VERSION_REV 0)
 
-# The extensions include the headers of freeDiameter that contains gnutls objects
-INCLUDE_DIRECTORIES(${LFDCORE_INCLUDES})
+# Version of the API with the library
+SET(FD_PROJECT_VERSION_API 7)
 
+# The test framework, using CTest and CDash.
+INCLUDE(CTest)
 
-###########################
-# Extensions section
+# Location of additional CMake modules
+SET(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake/Modules/")
 
-####
-# Diameter applications dictionaries
+# The default directories
+SET(DEFAULT_CONF_PATH ${CMAKE_INSTALL_PREFIX}/etc/freeDiameter CACHE PATH "Default location of freeDiameter configuration files")
 
-FD_EXTENSION_SUBDIR(dict_nasreq "NASREQ (RFC4005) Dictionary definitions"       ON)
-FD_EXTENSION_SUBDIR(dict_eap    "Diameter EAP (RFC4072) Dictionary definitions" ON)
+IF (NOT DEFINED LIB_INSTALL_DIR)
+SET(LIB_INSTALL_DIR lib CACHE PATH "Default library path name on the system, to accommodate RPM-based systems that use lib64")
+ENDIF (NOT DEFINED LIB_INSTALL_DIR)
 
-FD_EXTENSION_SUBDIR(dict_dcca         "Diameter CC (RFC4006) Dictionary definitions [incomplete]" ON)
-FD_EXTENSION_SUBDIR(dict_dcca_3gpp    "Diameter CC 3GPP Dictionary definitions [incomplete]" ON)
-FD_EXTENSION_SUBDIR(dict_dcca_starent "Diameter CC Starent Dictionary definitions" ON)
+SET(INSTALL_HEADERS_SUFFIX 		include/freeDiameter 	CACHE PATH "Directory where the headers are installed (relative to CMAKE_INSTALL_PREFIX).")
+SET(INSTALL_DAEMON_SUFFIX 		bin 			CACHE PATH "Directory where the daemon binary is installed (relative to CMAKE_INSTALL_PREFIX).")
+SET(INSTALL_LIBRARY_SUFFIX 		${LIB_INSTALL_DIR} 			CACHE PATH "Directory where the freeDiameter libraries are installed (relative to CMAKE_INSTALL_PREFIX).")
+SET(INSTALL_EXTENSIONS_SUFFIX 	${LIB_INSTALL_DIR}/freeDiameter	CACHE PATH "Directory where the extensions are installed / searched (relative to CMAKE_INSTALL_PREFIX).")
 
-FD_EXTENSION_SUBDIR(dict_sip    "Diameter SIP (RFC4740) Dictionary definitions" ON)
+# All source code should be POSIX 200112L compatible, but some other extensions might be used, so:
+ADD_DEFINITIONS(-D_GNU_SOURCE)
 
-FD_EXTENSION_SUBDIR(dict_mip6a     "Diameter Mobile IPv6 Auth Dictionary definitions"         ON)
-FD_EXTENSION_SUBDIR(dict_mip6i     "Diameter Mobile IPv6 IKE Dictionary definitions"          ON)
-FD_EXTENSION_SUBDIR(dict_nas_mipv6 "Diameter NAS-to-HAAA Interaction Dictionary definitions"  ON)
-FD_EXTENSION_SUBDIR(dict_rfc5777   "Classification and QoS (RFC 5777) Dictionary definitions" ON)
-# FD_EXTENSION_SUBDIR(dict_arinc839  "ARINC-839 Dictionary definitions" ON)
-FD_EXTENSION_SUBDIR(dict_magic_839 "MAGIC ARINC 839-2014 Dictionary definitions" ON)
+# Set a default build type if none was specified
+if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
+  message(STATUS "Setting build type to 'Debug' as none was specified.")
+  set(CMAKE_BUILD_TYPE Debug CACHE STRING "Choose the type of build." FORCE)
+  # Set the possible values of build type for cmake-gui
+  set_property(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS "Debug" "Release"
+    "MinSizeRel" "RelWithDebInfo" "Profiling" "MaxPerformance" "DebianPackage" "DebugValgrind")
+endif()
 
-# FD_EXTENSION_SUBDIR(app_magic_arinc839 "MAGIC system application extension" ON)
-# FD_EXTENSION_SUBDIR(app_magic_cic "MAGIC Client Interface Controller (CIC) Extension" ON)
-FD_EXTENSION_SUBDIR(app_magic "MAGIC Unified Extension (Production)" ON)
+# Add a "Profiling" build type
+# SET(CMAKE_BUILD_TYPE Profiling)
+SET(CMAKE_C_FLAGS_PROFILING "-fprofile-arcs -ftest-coverage -fstack-protector -g -Wall")
 
-IF (NOT CMAKE_BUILD_TYPE MATCHES "DebianPackage")
-FD_EXTENSION_SUBDIR(dict_json       "Load Diameter dictionary definitions from JSON files."   OFF)
-ENDIF (NOT CMAKE_BUILD_TYPE MATCHES "DebianPackage")
-FD_EXTENSION_SUBDIR(dict_legacy_xml "Load Diameter dictionary definitions from XML files."    OFF)
+# Add a "MaxPerformance" build type -- this is very silent...
+# SET(CMAKE_BUILD_TYPE MaxPerformance)
+SET(CMAKE_C_FLAGS_MAXPERFORMANCE "${CMAKE_C_FLAGS_RELEASE} -DSTRIP_DEBUG_CODE")
 
+# Add a "DebianPackage" build type used when creating the Debian packages
+SET(CMAKE_C_FLAGS_DEBIANPACKAGE "${CMAKE_C_FLAGS_RELWITHDEBINFO}")
 
-####
-# Diameter applications
+# Set the "Debug" flags
+SET(CMAKE_C_FLAGS_DEBUG "-Wall -g -O0")
 
-FD_EXTENSION_SUBDIR(app_acct    "Simple accounting application that stores accounting records in flat database" OFF)
-FD_EXTENSION_SUBDIR(app_diameap "Diameter EAP Application server (RFC 4072)" 					OFF)
-FD_EXTENSION_SUBDIR(app_radgw   "RADIUS/Diameter gateway translation - RADIUS client to Diameter server" 	OFF)
-FD_EXTENSION_SUBDIR(app_sip     "Diameter SIP Authentication and Authorization server (RFC 4740)" 		OFF)
+# Add a "DebugValgrind" build type used for checking execution with Valgrind tool
+SET(CMAKE_C_FLAGS_DEBUGVALGRIND "-Wall -g -O0")
 
-FD_EXTENSION_SUBDIR(app_redirect "Diameter Redirect server: send configurable Redirect indications to other peers" OFF)
+# Set the DEBUG flag for Debug and Profiling builds
+IF (CMAKE_BUILD_TYPE MATCHES "Debug|Profiling|DebugValgrind")
+  SET(DEBUG 1)
+ENDIF (CMAKE_BUILD_TYPE MATCHES "Debug|Profiling|DebugValgrind")
 
+# Build with fatal warnings?
+IF (ERRORS_ON_WARNINGS)
+  SET(CMAKE_C_FLAGS "-Wall -Werror ${CMAKE_C_FLAGS}")
+  SET(CMAKE_REQUIRED_FLAGS "-Wno-error ${CMAKE_REQUIRED_FLAGS}")
+ENDIF (ERRORS_ON_WARNINGS)
 
-####
-# Routing extensions
+# some subfolders use yacc and lex parsers
+SET(BISON_GENERATE_DEFINES TRUE)
+SET(BISON_PREFIX_OUTPUTS TRUE)
+INCLUDE(CMakeUserUseBison)
+SET(FLEX_PREFIX_OUTPUTS TRUE)
+INCLUDE(CMakeUserUseFlex)
+# In offline / minimal environments, rely on pre-generated parser/lexer sources
+# if bison/flex are not available, instead of failing the configuration.
+IF( NOT BISON_EXECUTABLE OR NOT FLEX_EXECUTABLE )
+  MESSAGE( WARNING "Bison/Flex not found; falling back to pre-generated sources (lex.fdd.c, fdd.tab.c, fdd.tab.h)." )
+ENDIF( NOT BISON_EXECUTABLE OR NOT FLEX_EXECUTABLE )
+# Check that flex is at least 2.5.20 to support bison-bridge
+# how to do the check with cmake???
 
-FD_EXTENSION_SUBDIR(rt_busypeers    "Handling of Diameter TOO_BUSY messages and relay timeouts"	ON)
-FD_EXTENSION_SUBDIR(rt_default      "Configurable routing rules for freeDiameter" 		     	ON)
-FD_EXTENSION_SUBDIR(rt_deny_by_size "Deny messages that are larger than a configured size" 		     	ON)
-FD_EXTENSION_SUBDIR(rt_ereg         "Configurable routing based on regexp matching of AVP values" OFF)
-FD_EXTENSION_SUBDIR(rt_ignore_dh    "Stow Destination-Host in Proxy-Info, restore to Origin-Host for answers"	ON)
-FD_EXTENSION_SUBDIR(rt_load_balance "Balance load over multiple equal hosts, based on outstanding requests"	ON)
-FD_EXTENSION_SUBDIR(rt_randomize    "Randomly choose one of the highest scored hosts and increase its score by one"	ON)
-FD_EXTENSION_SUBDIR(rt_redirect     "Handling of Diameter Redirect messages" 			ON)
-FD_EXTENSION_SUBDIR(rt_rewrite      "Convert/remove AVP data in messages" 			ON)
+# Add this to workaround an apparent bug in FreeBSD cmake (already defined in Linux)
+SET(CMAKE_SHARED_LIBRARY_LINK_C_FLAGS "-rdynamic")
 
+# For Darwin systems
+IF(APPLE)
+   SET(CMAKE_SHARED_MODULE_CREATE_C_FLAGS "${CMAKE_SHARED_MODULE_CREATE_C_FLAGS} -flat_namespace -undefined dynamic_lookup")
+   SET(CMAKE_SHARED_MODULE_CREATE_CXX_FLAGS "${CMAKE_SHARED_MODULE_CREATE_CXX_FLAGS} -flat_namespace -undefined dynamic_lookup")
+ENDIF(APPLE) 
 
+# Location for the include files
+INCLUDE_DIRECTORIES(include)
+INCLUDE_DIRECTORIES(${CMAKE_CURRENT_BINARY_DIR}/include)
+SUBDIRS(include/freeDiameter)
 
-####
-# Peers security extensions
+# Location for the source code
+SUBDIRS(libfdproto)
+SUBDIRS(libfdcore)
+SUBDIRS(freeDiameterd)
 
-FD_EXTENSION_SUBDIR(acl_wl "White-list based authorization of incoming connections" ON)
-#FD_EXTENSION_SUBDIR(magic_server "MAGIC system server extension" ON)
+# Extensions (there is no use of freeDiameter without any extension)
+SUBDIRS(extensions)
+SET(DISABLE_SCTP OFF CACHE BOOL "Disable SCTP support?")
+FIND_PACKAGE(SCTP)
+MESSAGE(STATUS "SCTP_FOUND: ${SCTP_FOUND}")
+MESSAGE(STATUS "SCTP_LIBRARIES: ${SCTP_LIBRARIES}")
 
-####
-# Debug & test extensions
+# Link simulator (independent component)
+# Disable link_simulator for now
+# SUBDIRS(link_simulator)
 
-FD_EXTENSION_SUBDIR(dbg_dict_dump   "Log dictionary dump"                            ON)
-FD_EXTENSION_SUBDIR(dbg_dict_dump_json   "Dump dictionary as JSON"                            OFF)
-FD_EXTENSION_SUBDIR(dbg_loglevel "Read loglevel from file -- allows runtime change"  ON)
-FD_EXTENSION_SUBDIR(dbg_monitor     "Outputs periodical status information"              ON)
-FD_EXTENSION_SUBDIR(dbg_msg_timings "Show some timing information for messages"      ON)
-FD_EXTENSION_SUBDIR(dbg_msg_dumps   "Show human-readable content of the received & sent messages"      ON)
-FD_EXTENSION_SUBDIR(dbg_rt          "Routing extension for debugging the routing module" ON)
-FD_EXTENSION_SUBDIR(test_app        "Testing application to send dummy message to another peer, like a Diameter 'ping'" OFF)
-FD_EXTENSION_SUBDIR(test_as     "Receive Abort-Session-Requests and display the data" OFF)
-FD_EXTENSION_SUBDIR(test_cc     "Receive Credit-Control-Requests and display the data" ON)
-FD_EXTENSION_SUBDIR(test_ccload     "Generate Credit-Control-Requests and count replies" ON)
-FD_EXTENSION_SUBDIR(test_sip        "Testing application to simulate Diameter-SIP client (RFC4740)" OFF)
-IF (NOT CMAKE_BUILD_TYPE MATCHES "DebianPackage")
-FD_EXTENSION_SUBDIR(dbg_interactive "Python-interpreter based module"                OFF)
-ENDIF (NOT CMAKE_BUILD_TYPE MATCHES "DebianPackage")
-FD_EXTENSION_SUBDIR(test_netemul    "Simple Diameter network emulator proxy extension (latency, PDV, duplicates)" OFF)
+# ADIF Simulator 是独立程序，在其自己的目录下编译:
+#   cd adif_simulator && mkdir build && cd build && cmake .. && make
 
-
-
-# The following extension have very little use except for specific tests, so we disable them except in Debug configurations.
-IF (CMAKE_BUILD_TYPE MATCHES "Debug")
-	FD_EXTENSION_SUBDIR(_sample     "Simple extension to demonstrate extension mechanism, for developers" OFF)
-	FD_EXTENSION_SUBDIR(test_acct   "Receive Accounting-Requests and display the data, but no storage" OFF)
-	FD_EXTENSION_SUBDIR(test_rt_any "Routing extension randomly sending message to any peer available, for testing purpose" OFF)
-ENDIF (CMAKE_BUILD_TYPE MATCHES "Debug")
-
+# The unary tests directory
+# Disable tests for now
+# IF ( BUILD_TESTING )
+#	SUBDIRS(tests)
+# ENDIF ( BUILD_TESTING )

@@ -1,0 +1,137 @@
+==========================================
+Windows 编译脚本编码问题修复
+==========================================
+
+问题描述：
+原始的 build.bat 脚本包含中文字符，在 Windows 命令提示符中出现编码问题，
+导致命令无法正确执行，出现类似 'EM'、'crosoft'、'綍...' 等错误。
+
+解决方案：
+已创建纯英文版本的编译脚本，避免编码问题。
+
+==========================================
+新的编译脚本
+==========================================
+
+1. build_english.bat（推荐）
+   - 完整功能的英文版编译脚本
+   - 包含详细的错误检查和状态输出
+   - 自动检测 Visual Studio 版本
+
+2. build_simple.bat（简化版）
+   - 最简化的编译脚本
+   - 减少可能的编码问题
+   - 基本功能完整
+
+==========================================
+使用方法
+==========================================
+
+方法1：使用英文版脚本（推荐）
+cd D:\freeDiameter_Windows_Source
+build_english.bat
+
+方法2：使用简化版脚本
+cd D:\freeDiameter_Windows_Source
+build_simple.bat
+
+方法3：手动编译
+cd D:\freeDiameter_Windows_Source
+mkdir build
+cd build
+cmake .. -G "Visual Studio 16 2019" -A x64
+cmake --build . --config Release
+
+==========================================
+编译环境要求
+==========================================
+
+必需软件：
+✅ Visual Studio 2019 或 2022（Community 版本免费）
+✅ CMake 3.10 或更新版本
+✅ Windows 10/11 64位系统
+
+下载链接：
+- Visual Studio: https://visualstudio.microsoft.com/zh-hans/vs/community/
+- CMake: https://cmake.org/download/
+
+安装 Visual Studio 时请选择：
+- C++ 桌面开发工作负载
+- Windows 10/11 SDK
+- CMake 工具
+
+==========================================
+故障排除
+==========================================
+
+问题1：CMake 未找到
+解决：
+- 下载安装 CMake
+- 安装时选择 "Add CMake to system PATH"
+- 重新打开命令提示符
+
+问题2：Visual Studio 编译器未找到
+解决：
+- 确保安装了 Visual Studio（不是 VS Code）
+- 安装时选择 C++ 桌面开发工作负载
+- 或者手动运行 Visual Studio 环境设置：
+  "C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Auxiliary\Build\vcvars64.bat"
+
+问题3：编译失败
+解决：
+- 检查源代码是否完整
+- 确认 Windows SDK 已安装
+- 尝试使用 Debug 模式编译
+
+问题4：字符编码问题
+解决：
+- 使用新的英文版编译脚本
+- 确保命令提示符使用正确的代码页：chcp 65001
+
+==========================================
+验证编译成功
+==========================================
+
+编译成功后，应该看到：
+✅ build\Release\diameter_client.exe（或 build\Debug\diameter_client.exe）
+✅ build\Release\client.conf
+✅ build\Release\certs\ 目录
+
+测试可执行文件：
+cd build\Release
+diameter_client.exe --help
+
+如果显示帮助信息，说明编译成功。
+
+==========================================
+运行客户端
+==========================================
+
+前提条件：
+1. WSL Ubuntu 服务端正在运行
+2. 配置文件正确设置
+
+启动客户端：
+cd D:\freeDiameter_Windows_Source\build\Release
+diameter_client.exe --conf client.conf
+
+==========================================
+文件清单
+==========================================
+
+新增文件：
+- build_english.bat（英文版编译脚本）
+- build_simple.bat（简化版编译脚本）
+- WINDOWS_BUILD_FIX.txt（本修复指南）
+
+原有文件：
+- build.bat（原始脚本，可能有编码问题）
+- build.ps1（PowerShell 脚本）
+- CMakeLists.txt（CMake 配置）
+
+建议使用顺序：
+1. 首先尝试 build_english.bat
+2. 如果仍有问题，使用 build_simple.bat
+3. 最后选择手动编译
+
+==========================================

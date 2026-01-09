@@ -1,0 +1,91 @@
+=== 文件清理报告 ===
+清理时间: Tue Oct 28 10:07:30 CST 2025
+清理目录: /home/zhuwuhui/freeDiameter
+
+删除文件: /home/zhuwuhui/freeDiameter/_backup_old_implementation_20251021_170916/magic_server/CMakeFiles/magic_server.dir/src/netmgmt/magic_netmgmt.c.o
+  大小: 33680 字节
+  修改时间: 2025-10-21 17:09:34.437587204 +0800
+  删除原因: 编译产生的目标文件
+  删除时间: Tue Oct 28 10:07:30 CST 2025
+
+删除文件: /home/zhuwuhui/freeDiameter/_backup_old_implementation_20251021_170916/magic_server/CMakeFiles/magic_server.dir/src/cm/magic_cm.c.o
+  大小: 57592 字节
+  修改时间: 2025-10-21 17:09:34.437587204 +0800
+  删除原因: 编译产生的目标文件
+  删除时间: Tue Oct 28 10:07:30 CST 2025
+
+删除文件: /home/zhuwuhui/freeDiameter/_backup_old_implementation_20251021_170916/magic_server/CMakeFiles/magic_server.dir/src/cic/magic_cic.c.o
+  大小: 62368 字节
+  修改时间: 2025-10-21 17:09:34.433587204 +0800
+  删除原因: 编译产生的目标文件
+  删除时间: Tue Oct 28 10:07:30 CST 2025
+
+删除文件: /home/zhuwuhui/freeDiameter/_backup_old_implementation_20251021_170916/magic_server/CMakeFiles/magic_server.dir/src/utils/magic_config.c.o
+  大小: 34784 字节
+  修改时间: 2025-10-21 17:09:34.437587204 +0800
+  删除原因: 编译产生的目标文件
+  删除时间: Tue Oct 28 10:07:30 CST 2025
+
+删除文件: /home/zhuwuhui/freeDiameter/_backup_old_implementation_20251021_170916/magic_server/CMakeFiles/magic_server.dir/src/magic_server.c.o
+  大小: 30712 字节
+  修改时间: 2025-10-21 17:09:34.437587204 +0800
+  删除原因: 编译产生的目标文件
+  删除时间: Tue Oct 28 10:07:31 CST 2025
+
+删除文件: /home/zhuwuhui/freeDiameter/_backup_old_implementation_20251021_170916/magic_server/CMakeFiles/magic_server.dir/src/dlm/magic_dlm.c.o
+  大小: 41360 字节
+  修改时间: 2025-10-21 17:09:34.437587204 +0800
+  删除原因: 编译产生的目标文件
+  删除时间: Tue Oct 28 10:07:31 CST 2025
+
+删除文件: /home/zhuwuhui/freeDiameter/_backup_old_implementation_20251021_170916/magic_client/obj/magic_network.o
+  大小: 19632 字节
+  修改时间: 2025-10-21 17:09:34.445587203 +0800
+  删除原因: 编译产生的目标文件
+  删除时间: Tue Oct 28 10:07:31 CST 2025
+
+删除文件: /home/zhuwuhui/freeDiameter/_backup_old_implementation_20251021_170916/magic_client/obj/magic_client.o
+  大小: 18496 字节
+  修改时间: 2025-10-21 17:09:34.445587203 +0800
+  删除原因: 编译产生的目标文件
+  删除时间: Tue Oct 28 10:07:31 CST 2025
+
+删除文件: /home/zhuwuhui/freeDiameter/_backup_old_implementation_20251021_170916/magic_client/obj/magic_auth.o
+  大小: 20400 字节
+  修改时间: 2025-10-21 17:09:34.445587203 +0800
+  删除原因: 编译产生的目标文件
+  删除时间: Tue Oct 28 10:07:31 CST 2025
+
+删除文件: /home/zhuwuhui/freeDiameter/_backup_old_implementation_20251021_170916/magic_client/obj/main.o
+  大小: 22688 字节
+  修改时间: 2025-10-21 17:09:34.445587203 +0800
+  删除原因: 编译产生的目标文件
+  删除时间: Tue Oct 28 10:07:31 CST 2025
+
+删除文件: /home/zhuwuhui/freeDiameter/_backup_old_implementation_20251021_170916/magic_client/obj/magic_proxy.o
+  大小: 20456 字节
+  修改时间: 2025-10-21 17:09:34.449587203 +0800
+  删除原因: 编译产生的目标文件
+  删除时间: Tue Oct 28 10:07:31 CST 2025
+
+删除文件: /home/zhuwuhui/freeDiameter/_backup_old_implementation_20251021_170916/magic_client/obj/magic_config.o
+  大小: 20880 字节
+  修改时间: 2025-10-21 17:09:34.449587203 +0800
+  删除原因: 编译产生的目标文件
+  删除时间: Tue Oct 28 10:07:31 CST 2025
+
+=== 超过30天的文档文件（需要手动确认） ===
+发现旧文档: /home/zhuwuhui/freeDiameter/docs/ARINC839软件技术方案 (已自动恢复).pdf (大小:  字节, 修改时间: )
+  建议: 请手动检查是否需要删除
+
+发现旧文档: /home/zhuwuhui/freeDiameter/docs/空地通信链路管理软件需求V1.1.pdf (大小:  字节, 修改时间: )
+  建议: 请手动检查是否需要删除
+
+发现旧文档: /home/zhuwuhui/freeDiameter/docs/ARINC SPECIFICATION 839-MAGIC翻译（草稿）.pdf (大小:  字节, 修改时间: )
+  建议: 请手动检查是否需要删除
+
+
+=== 清理总结 ===
+删除文件总数: 0
+释放空间总计: 0 字节 (0 MB)
+清理完成时间: Tue Oct 28 10:07:31 CST 2025

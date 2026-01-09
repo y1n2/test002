@@ -1,0 +1,74 @@
+# Makefile for MAGIC DLM/CM System
+# 编译 CM Core 和三个 DLM 进程
+
+CC = gcc
+CFLAGS = -Wall -Wextra -pthread -I. -Imagic_server
+LDFLAGS = -pthread
+
+# 公共源文件
+COMMON_SRC = magic_server/dlm_common.c
+COMMON_OBJ = dlm_common.o
+
+# 目标可执行文件
+TARGETS = cm_core dlm_satcom dlm_cellular dlm_wifi
+
+.PHONY: all clean test
+
+all: $(TARGETS)
+
+# 编译公共模块
+$(COMMON_OBJ): $(COMMON_SRC) magic_server/dlm_common.h magic_server/ipc_protocol.h
+	$(CC) $(CFLAGS) -c $< -o $@
+
+# CM Core Server
+cm_core: magic_server/cm_core_simple.c magic_server/ipc_protocol.h
+	$(CC) $(CFLAGS) $< $(LDFLAGS) -o $@
+	@echo "✓ Built cm_core"
+
+# DLM SATCOM
+dlm_satcom: DLM_SATCOM/dlm_satcom_main.c $(COMMON_OBJ)
+	$(CC) $(CFLAGS) $< $(COMMON_OBJ) $(LDFLAGS) -o $@
+	@echo "✓ Built dlm_satcom"
+
+# DLM CELLULAR
+dlm_cellular: DLM_CELLULAR/dlm_cellular_main.c $(COMMON_OBJ)
+	$(CC) $(CFLAGS) $< $(COMMON_OBJ) $(LDFLAGS) -o $@
+	@echo "✓ Built dlm_cellular"
+
+# DLM WIFI
+dlm_wifi: DLM_WIFI/dlm_wifi_main.c $(COMMON_OBJ)
+	$(CC) $(CFLAGS) $< $(COMMON_OBJ) $(LDFLAGS) -o $@
+	@echo "✓ Built dlm_wifi"
+
+# 清理
+clean:
+	rm -f $(TARGETS) $(COMMON_OBJ)
+	rm -f /tmp/magic_core.sock
+	@echo "✓ Cleaned"
+
+# 快速测试
+test: all
+	@echo "Running quick test..."
+	@./cm_core &
+	@CM_PID=$$!; \
+	sleep 2; \
+	./dlm_satcom & \
+	./dlm_cellular & \
+	./dlm_wifi & \
+	sleep 5; \
+	echo "All processes started. Press Ctrl+C to stop."; \
+	wait $$CM_PID
+
+help:
+	@echo "MAGIC DLM/CM Build System"
+	@echo ""
+	@echo "Targets:"
+	@echo "  all     - Build all binaries"
+	@echo "  clean   - Remove build artifacts"
+	@echo "  test    - Build and run quick test"
+	@echo ""
+	@echo "Binaries:"
+	@echo "  cm_core       - CM Core Server"
+	@echo "  dlm_satcom    - SATCOM DLM (eth1)"
+	@echo "  dlm_cellular  - CELLULAR DLM (eth2)"
+	@echo "  dlm_wifi      - WIFI DLM (eth3)"
